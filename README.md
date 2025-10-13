@@ -74,8 +74,112 @@ El flujo comienza con los sensores conectados a una placa **Arduino UNO**. Los d
 
 ## 🚀 Puesta en Marcha (Próximamente)
 
-* [Detalles sobre cómo clonar el repositorio, instalar dependencias y ejecutar el proyecto.]
-* ...
+### Requisitos
+
+- Docker Desktop instalado y corriendo
+- Python 3.11+
+
+### 1) Base de datos (MongoDB)
+
+```bash
+docker compose up -d
+```
+
+MongoDB expone `localhost:27017` con usuario `root` y password `example`.
+
+### 2) Backend (FastAPI)
+
+1. Crear entorno e instalar dependencias:
+   ```bash
+   make install-backend
+   ```
+2. Ejecutar API en desarrollo:
+   ```bash
+   make api
+   ```
+3. Probar salud:
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+Variables de entorno opcionales (crear `backend/.env`):
+
+```
+MONGODB_URI=mongodb://root:example@localhost:27017
+MONGODB_DB=smartbreathing
+```
+
+### 3) Bot de Telegram
+
+1. Crear bot y obtener `TELEGRAM_BOT_TOKEN` (BotFather).
+2. Instalar dependencias:
+   ```bash
+   make install-bot
+   ```
+3. Crear archivo `bot/.env` con:
+   ```
+   TELEGRAM_BOT_TOKEN=xxxxxxxx:yyyyyyyy
+   ```
+4. Ejecutar bot:
+   ```bash
+   make bot
+   ```
+
+### 4) Frontend (Dashboard)
+
+1. Ejecutar servidor de desarrollo:
+   ```bash
+   make frontend
+   ```
+2. Abrir http://localhost:3000 en el navegador
+
+### 5) Ingesta desde Arduino (serial)
+
+1. Instalar dependencias:
+   ```bash
+   make install-ingestion
+   ```
+2. Configurar `ingestion/.env` (opcional):
+   ```
+   SERIAL_PORT=COM3
+   SERIAL_BAUD=9600
+   SERIAL_TIMEOUT=1.0
+   ```
+3. Usar `ingestion/serial_reader.py` para pruebas de lectura.
+
+### 6) Estructura del Proyecto
+
+```
+SmartBreathing/
+├── backend/           # API FastAPI + IA
+│   ├── app/
+│   │   ├── main.py    # Endpoints principales
+│   │   ├── models.py  # Modelos de datos
+│   │   ├── ai_engine.py # Motor de IA
+│   │   └── db.py      # Conexión MongoDB
+│   └── requirements.txt
+├── bot/               # Bot de Telegram
+│   ├── bot.py
+│   └── requirements.txt
+├── frontend/          # Dashboard web
+│   └── index.html
+├── ingestion/         # Lectura de sensores Arduino
+│   ├── serial_reader.py
+│   └── requirements.txt
+├── docker-compose.yml # MongoDB
+└── Makefile          # Comandos de desarrollo
+```
+
+### 7) API Endpoints Principales
+
+- `GET /` - Dashboard frontend
+- `GET /health` - Estado del sistema
+- `POST /api/users/` - Crear usuario
+- `GET /api/users/{telegram_id}` - Obtener usuario
+- `POST /api/sensors/reading` - Enviar datos de sensores
+- `GET /api/sensors/readings/{user_id}` - Obtener lecturas
+- `GET /api/analysis/{user_id}` - Análisis fisiológico
+- `GET /api/recommendations/{user_id}` - Recomendaciones IA
 
 ## 🤝 Contribución
 

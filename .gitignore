@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Node/Telegram bot
+node_modules/
+.npm/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+*.log
+
+# Docker
+data/
+mongodb/
+
+

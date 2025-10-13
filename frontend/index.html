@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBreathing - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-title {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .metric-unit {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-good { background-color: #4CAF50; }
+        .status-warning { background-color: #FF9800; }
+        .status-danger { background-color: #F44336; }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧘‍♂️ SmartBreathing</h1>
+            <p>Dashboard de Monitoreo Fisiológico</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Saturación de Oxígeno (SpO₂)</div>
+                <div class="metric-value" id="spo2-value">--</div>
+                <div class="metric-unit">%</div>
+                <div class="status-indicator status-good" id="spo2-status"></div>
+                <span id="spo2-text">Normal</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Nivel de CO₂</div>
+                <div class="metric-value" id="co2-value">--</div>
+                <div class="metric-unit">ppm</div>
+                <div class="status-indicator status-good" id="co2-status"></div>
+                <span id="co2-text">Normal</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Frecuencia Cardíaca</div>
+                <div class="metric-value" id="hr-value">--</div>
+                <div class="metric-unit">bpm</div>
+                <div class="status-indicator status-good" id="hr-status"></div>
+                <span id="hr-text">Normal</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Estado General</div>
+                <div class="metric-value" id="overall-status">--</div>
+                <div class="metric-unit">Estado</div>
+                <div class="status-indicator status-good" id="overall-indicator"></div>
+                <span id="overall-text">Monitoreando</span>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Tendencias en Tiempo Real</div>
+            <canvas id="trendsChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Rutina de Ejercicio Actual</div>
+            <div id="routine-info" class="loading">
+                Cargando rutina...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Chart.js
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        const trendsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'SpO₂ (%)',
+                    data: [],
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'CO₂ (ppm)',
+                    data: [],
+                    borderColor: '#FF9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Frecuencia Cardíaca (bpm)',
+                    data: [],
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        // Simulación de datos (reemplazar con datos reales de la API)
+        function updateMetrics() {
+            // Simular datos de sensores
+            const spo2 = 95 + Math.random() * 5;
+            const co2 = 400 + Math.random() * 100;
+            const hr = 70 + Math.random() * 20;
+            
+            // Actualizar valores
+            document.getElementById('spo2-value').textContent = spo2.toFixed(1);
+            document.getElementById('co2-value').textContent = co2.toFixed(0);
+            document.getElementById('hr-value').textContent = hr.toFixed(0);
+            
+            // Actualizar estados
+            updateStatus('spo2', spo2, 95, 100);
+            updateStatus('co2', co2, 400, 600);
+            updateStatus('hr', hr, 60, 100);
+            
+            // Actualizar gráfico
+            const now = new Date().toLocaleTimeString();
+            trendsChart.data.labels.push(now);
+            trendsChart.data.datasets[0].data.push(spo2);
+            trendsChart.data.datasets[1].data.push(co2);
+            trendsChart.data.datasets[2].data.push(hr);
+            
+            // Mantener solo los últimos 20 puntos
+            if (trendsChart.data.labels.length > 20) {
+                trendsChart.data.labels.shift();
+                trendsChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            
+            trendsChart.update();
+        }
+
+        function updateStatus(metric, value, min, max) {
+            const statusEl = document.getElementById(metric + '-status');
+            const textEl = document.getElementById(metric + '-text');
+            
+            if (value >= min && value <= max) {
+                statusEl.className = 'status-indicator status-good';
+                textEl.textContent = 'Normal';
+            } else if (value < min * 0.9 || value > max * 1.1) {
+                statusEl.className = 'status-indicator status-danger';
+                textEl.textContent = 'Alerta';
+            } else {
+                statusEl.className = 'status-indicator status-warning';
+                textEl.textContent = 'Atención';
+            }
+        }
+
+        // Actualizar métricas cada 2 segundos
+        setInterval(updateMetrics, 2000);
+        
+        // Cargar rutina actual
+        async function loadCurrentRoutine() {
+            try {
+                const response = await fetch('/api/routine/current');
+                const routine = await response.json();
+                
+                document.getElementById('routine-info').innerHTML = `
+                    <h3>${routine.name || 'Rutina Personalizada'}</h3>
+                    <p><strong>Duración:</strong> ${routine.duration || '30'} minutos</p>
+                    <p><strong>Intensidad:</strong> ${routine.intensity || 'Moderada'}</p>
+                    <p><strong>Próximo ejercicio:</strong> ${routine.nextExercise || 'Descanso activo'}</p>
+                `;
+            } catch (error) {
+                document.getElementById('routine-info').innerHTML = `
+                    <p>No hay rutina activa. Usa el bot de Telegram para crear una nueva rutina.</p>
+                `;
+            }
+        }
+
+        // Cargar datos iniciales
+        loadCurrentRoutine();
+        updateMetrics();
+    </script>
+</body>
+</html>
