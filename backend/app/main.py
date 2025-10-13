@@ -52,20 +52,21 @@ async def create_sensor_reading(reading: SensorReading):
     result = db.sensor_readings.insert_one(reading.dict(by_alias=True))
     reading.id = result.inserted_id
     
-    # Generar recomendación automática
-    recent_readings = list(db.sensor_readings.find(
-        {"user_id": reading.user_id},
-        sort=[("timestamp", -1)],
-        limit=10
-    ))
-    recent_readings = [SensorReading(**r) for r in recent_readings]
-    
-    if len(recent_readings) >= 3:  # Mínimo 3 lecturas para análisis
-        analysis = ai_engine.analyze_physiological_data(str(reading.user_id), recent_readings)
-        recommendation = ai_engine.generate_recommendation(str(reading.user_id), analysis)
+    # Generar recomendación automática usando ChatGPT
+    if reading.user_id:
+        analysis = ai_engine.analyze_physiological_data(str(reading.user_id))
         
-        # Guardar recomendación
-        db.recommendations.insert_one(recommendation.dict(by_alias=True))
+        # Si el análisis contiene recomendaciones, guardarlas
+        if analysis.get("recommendations"):
+            for rec in analysis["recommendations"]:
+                recommendation = AIRecommendation(
+                    user_id=reading.user_id,
+                    recommendation_type=rec.get("type", "general"),
+                    message=rec.get("message", "Revisar métricas"),
+                    confidence_score=analysis.get("confidence_score", 0.5),
+                    based_on_metrics={"analysis": analysis}
+                )
+                db.recommendations.insert_one(recommendation.dict(by_alias=True))
     
     return reading
 
@@ -110,23 +111,36 @@ async def get_current_routine():
 # Endpoints de análisis y recomendaciones
 @app.get("/api/analysis/{user_id}")
 async def get_user_analysis(user_id: str):
-    """Obtener análisis fisiológico del usuario"""
-    db = get_database()
-    
-    # Obtener lecturas recientes (últimas 2 horas)
-    since = datetime.utcnow() - timedelta(hours=2)
-    recent_readings = list(db.sensor_readings.find(
-        {"user_id": user_id, "timestamp": {"$gte": since}},
-        sort=[("timestamp", -1)],
-        limit=100
-    ))
-    recent_readings = [SensorReading(**r) for r in recent_readings]
-    
-    if not recent_readings:
-        return {"status": "no_data", "message": "No hay datos recientes"}
-    
-    analysis = ai_engine.analyze_physiological_data(user_id, recent_readings)
-    return analysis
+    """Obtener análisis fisiológico del usuario usando ChatGPT"""
+    try:
+        analysis = ai_engine.analyze_physiological_data(user_id)
+        return analysis
+    except Exception as e:
+        return {"status": "error", "message": f"Error en análisis: {str(e)}"}
+
+@app.post("/api/ai/generate-routine/{user_id}")
+async def generate_ai_routine(user_id: str, goals: List[str] = None):
+    """Generar rutina personalizada usando ChatGPT"""
+    try:
+        # Obtener perfil del usuario
+        db = get_database()
+        user_data = db.users.find_one({"_id": user_id})
+        if not user_data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        user_profile = UserProfile(**user_data)
+        goals = goals or ["general_fitness"]
+        
+        # Generar rutina con IA
+        routine = ai_engine.create_personalized_routine(user_profile, goals)
+        
+        # Guardar rutina
+        result = db.routines.insert_one(routine.dict(by_alias=True))
+        routine.id = result.inserted_id
+        
+        return routine
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando rutina: {str(e)}")
 
 @app.get("/api/recommendations/{user_id}", response_model=List[AIRecommendation])
 async def get_user_recommendations(user_id: str, limit: int = 10):

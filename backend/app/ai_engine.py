@@ -3,14 +3,36 @@ from typing import List, Dict, Optional
 import statistics
 from .models import SensorReading, UserProfile, AIRecommendation, WorkoutRoutine
 from .db import get_database
+from .openai_client import SmartBreathingOpenAI
 
 
 class SmartBreathingAI:
     def __init__(self):
         self.db = get_database()
+        self.openai_client = SmartBreathingOpenAI()
     
-    def analyze_physiological_data(self, user_id: str, recent_readings: List[SensorReading]) -> Dict:
-        """Analiza los datos fisiológicos recientes y genera insights"""
+    def analyze_physiological_data(self, user_id: str, recent_readings: List[SensorReading] = None) -> Dict:
+        """Analiza los datos fisiológicos usando ChatGPT con datos de MongoDB"""
+        try:
+            # Usar el cliente de OpenAI para análisis inteligente
+            analysis_result = self.openai_client.analyze_user_physiology(user_id, time_window_hours=2)
+            return analysis_result
+        except Exception as e:
+            # Fallback al análisis básico si hay error con OpenAI
+            return self._fallback_analysis(user_id, recent_readings)
+    
+    def _fallback_analysis(self, user_id: str, recent_readings: List[SensorReading] = None) -> Dict:
+        """Análisis básico de respaldo si falla OpenAI"""
+        if not recent_readings:
+            # Obtener lecturas de la base de datos
+            since = datetime.utcnow() - timedelta(hours=2)
+            readings_data = list(self.db.sensor_readings.find(
+                {"user_id": user_id, "timestamp": {"$gte": since}},
+                sort=[("timestamp", -1)],
+                limit=50
+            ))
+            recent_readings = [SensorReading(**r) for r in readings_data]
+        
         if not recent_readings:
             return {"status": "insufficient_data", "message": "No hay datos suficientes para análisis"}
         
@@ -20,12 +42,25 @@ class SmartBreathingAI:
         hr_values = [r.heart_rate for r in recent_readings]
         
         analysis = {
+            "status": "success",
+            "analysis_summary": f"Análisis básico: SpO2 {statistics.mean(spo2_values):.1f}%, CO2 {statistics.mean(co2_values):.0f}ppm, FC {statistics.mean(hr_values):.0f}bpm",
+            "alerts": [],
+            "trends": [
+                f"SpO2: {self._calculate_trend(spo2_values)}",
+                f"CO2: {self._calculate_trend(co2_values)}",
+                f"FC: {self._calculate_trend(hr_values)}"
+            ],
+            "recommendations": [{
+                "type": "general",
+                "priority": "medium",
+                "message": "Análisis básico completado",
+                "action": "Revisar métricas"
+            }],
+            "next_steps": "Continuar monitoreo",
+            "confidence_score": 0.6,
             "avg_spo2": statistics.mean(spo2_values),
             "avg_co2": statistics.mean(co2_values),
             "avg_heart_rate": statistics.mean(hr_values),
-            "spo2_trend": self._calculate_trend(spo2_values),
-            "co2_trend": self._calculate_trend(co2_values),
-            "hr_trend": self._calculate_trend(hr_values),
             "data_quality": self._assess_data_quality(recent_readings),
             "timestamp": datetime.utcnow()
         }
@@ -123,7 +158,47 @@ class SmartBreathingAI:
         return adjustments
     
     def create_personalized_routine(self, user_profile: UserProfile, goals: List[str]) -> WorkoutRoutine:
-        """Crea una rutina personalizada basada en el perfil del usuario"""
+        """Crea una rutina personalizada usando ChatGPT con datos de MongoDB"""
+        try:
+            # Usar ChatGPT para generar rutina personalizada
+            recommendation = self.openai_client.generate_workout_recommendation(
+                user_id=str(user_profile.id),
+                current_routine=None
+            )
+            
+            if recommendation.get("status") == "error":
+                # Fallback a rutina básica
+                return self._create_basic_routine(user_profile, goals)
+            
+            # Convertir respuesta de ChatGPT a WorkoutRoutine
+            routine_data = recommendation.get("routine", {})
+            exercises = []
+            
+            for exercise in routine_data.get("exercises", []):
+                exercises.append({
+                    "name": exercise.get("name", "Ejercicio"),
+                    "duration": exercise.get("duration_minutes", 5),
+                    "intensity": exercise.get("intensity", "moderate"),
+                    "description": exercise.get("description", ""),
+                    "instructions": exercise.get("instructions", [])
+                })
+            
+            return WorkoutRoutine(
+                user_id=user_profile.id,
+                name=routine_data.get("routine_name", f"Rutina {user_profile.fitness_level.title()}"),
+                description=f"Rutina personalizada por IA para {user_profile.name}",
+                exercises=exercises,
+                total_duration=routine_data.get("duration_minutes", 30),
+                difficulty=routine_data.get("difficulty", user_profile.fitness_level),
+                target_goals=goals
+            )
+            
+        except Exception as e:
+            # Fallback a rutina básica si hay error
+            return self._create_basic_routine(user_profile, goals)
+    
+    def _create_basic_routine(self, user_profile: UserProfile, goals: List[str]) -> WorkoutRoutine:
+        """Crea una rutina básica como fallback"""
         # Rutinas base por nivel de fitness
         base_routines = {
             "beginner": {
