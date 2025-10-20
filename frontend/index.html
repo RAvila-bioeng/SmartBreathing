@@ -110,6 +110,86 @@
             color: #666;
             font-style: italic;
         }
+        
+        .measurement-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .measurement-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 10px;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .measurement-status {
+            margin-top: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .status-measuring {
+            color: #FF9800;
+        }
+        
+        .status-complete {
+            color: #4CAF50;
+        }
+        
+        .countdown {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 5px;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -151,6 +231,22 @@
                 <div class="status-indicator status-good" id="overall-indicator"></div>
                 <span id="overall-text">Monitoreando</span>
             </div>
+        </div>
+        
+        <div class="measurement-controls">
+            <div class="measurement-title">🎯 Control de Mediciones</div>
+            <button id="startMeasurementBtn" class="start-btn" onclick="startMeasurement()">
+                Iniciar Medición
+            </button>
+            <br>
+            <button class="export-btn" onclick="showStoredData()">
+                📊 Ver Datos Guardados
+            </button>
+            <button class="export-btn" onclick="downloadDataAsJSON()">
+                💾 Descargar JSON
+            </button>
+            <div id="measurementStatus" class="measurement-status"></div>
+            <div id="countdown" class="countdown"></div>
         </div>
         
         <div class="chart-container">
@@ -215,6 +311,22 @@
             const co2 = 400 + Math.random() * 100;
             const hr = 70 + Math.random() * 20;
             
+            // Crear objeto de datos para almacenamiento
+            const measurementData = {
+                timestamp: new Date().toISOString(),
+                spo2: parseFloat(spo2.toFixed(1)),
+                co2: parseInt(co2.toFixed(0)),
+                hr: parseInt(hr.toFixed(0)),
+                spo2Status: getStatusText(spo2, 95, 100),
+                co2Status: getStatusText(co2, 400, 600),
+                hrStatus: getStatusText(hr, 60, 100)
+            };
+            
+            // Si estamos midiendo, guardar datos
+            if (isMeasuring) {
+                currentMeasurementData.push(measurementData);
+            }
+            
             // Actualizar valores
             document.getElementById('spo2-value').textContent = spo2.toFixed(1);
             document.getElementById('co2-value').textContent = co2.toFixed(0);
@@ -240,6 +352,17 @@
             
             trendsChart.update();
         }
+        
+        // Función auxiliar para obtener texto de estado
+        function getStatusText(value, min, max) {
+            if (value >= min && value <= max) {
+                return 'Normal';
+            } else if (value < min * 0.9 || value > max * 1.1) {
+                return 'Alerta';
+            } else {
+                return 'Atención';
+            }
+        }
 
         function updateStatus(metric, value, min, max) {
             const statusEl = document.getElementById(metric + '-status');
@@ -257,8 +380,234 @@
             }
         }
 
-        // Actualizar métricas cada 2 segundos
-        setInterval(updateMetrics, 2000);
+        // Variables para el control de mediciones
+        let isMeasuring = false;
+        let measurementInterval = null;
+        let countdownInterval = null;
+        let measurementDuration = 10; // segundos
+        
+        // Sistema de almacenamiento de datos
+        let currentMeasurementData = [];
+        let measurementSessions = JSON.parse(localStorage.getItem('measurementSessions') || '[]');
+
+        // Función para iniciar medición
+        function startMeasurement() {
+            if (isMeasuring) return;
+            
+            isMeasuring = true;
+            const btn = document.getElementById('startMeasurementBtn');
+            const status = document.getElementById('measurementStatus');
+            const countdown = document.getElementById('countdown');
+            
+            // Inicializar datos de medición
+            currentMeasurementData = [];
+            const sessionStartTime = new Date().toISOString();
+            
+            // Deshabilitar botón y actualizar UI
+            btn.disabled = true;
+            btn.textContent = 'Medición en Progreso...';
+            status.textContent = 'Iniciando medición...';
+            status.className = 'measurement-status status-measuring';
+            
+            let timeLeft = measurementDuration;
+            countdown.textContent = `Tiempo restante: ${timeLeft}s`;
+            
+            // Actualizar countdown cada segundo
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                countdown.textContent = `Tiempo restante: ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    finishMeasurement(sessionStartTime);
+                }
+            }, 1000);
+            
+            // Realizar mediciones más frecuentes durante la medición activa
+            measurementInterval = setInterval(updateMetrics, 500); // Cada 0.5 segundos
+            
+            // Actualizar estado
+            setTimeout(() => {
+                status.textContent = 'Recopilando datos fisiológicos...';
+            }, 1000);
+        }
+        
+        // Función para finalizar medición
+        function finishMeasurement(sessionStartTime) {
+            isMeasuring = false;
+            const btn = document.getElementById('startMeasurementBtn');
+            const status = document.getElementById('measurementStatus');
+            const countdown = document.getElementById('countdown');
+            
+            // Limpiar intervalos
+            if (measurementInterval) {
+                clearInterval(measurementInterval);
+                measurementInterval = null;
+            }
+            
+            // Crear sesión de medición para almacenamiento
+            const measurementSession = {
+                sessionId: generateSessionId(),
+                startTime: sessionStartTime,
+                endTime: new Date().toISOString(),
+                duration: measurementDuration,
+                dataPoints: currentMeasurementData.length,
+                measurements: currentMeasurementData,
+                summary: calculateSessionSummary(currentMeasurementData)
+            };
+            
+            // Guardar sesión en localStorage
+            measurementSessions.push(measurementSession);
+            localStorage.setItem('measurementSessions', JSON.stringify(measurementSessions));
+            
+            // Mostrar estadísticas de la sesión
+            const dataPoints = currentMeasurementData.length;
+            const avgSpo2 = measurementSession.summary.avgSpo2;
+            const avgCo2 = measurementSession.summary.avgCo2;
+            const avgHr = measurementSession.summary.avgHr;
+            
+            // Restaurar botón y UI
+            btn.disabled = false;
+            btn.textContent = 'Iniciar Medición';
+            status.innerHTML = `✅ Medición completada!<br/>
+                               📊 ${dataPoints} datos recopilados<br/>
+                               📈 SpO₂: ${avgSpo2}% | CO₂: ${avgCo2}ppm | HR: ${avgHr}bpm`;
+            status.className = 'measurement-status status-complete';
+            countdown.textContent = '';
+            
+            // Volver a intervalo normal después de 5 segundos
+            setTimeout(() => {
+                status.textContent = 'Listo para nueva medición';
+                status.className = 'measurement-status';
+            }, 5000);
+            
+            // Restaurar intervalo normal de actualización
+            setTimeout(() => {
+                setInterval(updateMetrics, 2000);
+            }, 5000);
+            
+            // Log para debug
+            console.log('Sesión de medición guardada:', measurementSession);
+        }
+
+        // Función para generar ID único de sesión
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Función para calcular resumen de la sesión
+        function calculateSessionSummary(measurements) {
+            if (measurements.length === 0) return null;
+            
+            const spo2Values = measurements.map(m => m.spo2);
+            const co2Values = measurements.map(m => m.co2);
+            const hrValues = measurements.map(m => m.hr);
+            
+            return {
+                avgSpo2: (spo2Values.reduce((a, b) => a + b, 0) / spo2Values.length).toFixed(1),
+                avgCo2: Math.round(co2Values.reduce((a, b) => a + b, 0) / co2Values.length),
+                avgHr: Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length),
+                minSpo2: Math.min(...spo2Values).toFixed(1),
+                maxSpo2: Math.max(...spo2Values).toFixed(1),
+                minCo2: Math.min(...co2Values),
+                maxCo2: Math.max(...co2Values),
+                minHr: Math.min(...hrValues),
+                maxHr: Math.max(...hrValues),
+                totalDataPoints: measurements.length
+            };
+        }
+        
+        // Función para obtener todas las sesiones guardadas
+        function getAllMeasurementSessions() {
+            return JSON.parse(localStorage.getItem('measurementSessions') || '[]');
+        }
+        
+        // Función para exportar datos en formato compatible con MongoDB
+        function exportDataForMongoDB() {
+            const sessions = getAllMeasurementSessions();
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                totalSessions: sessions.length,
+                sessions: sessions.map(session => ({
+                    _id: session.sessionId, // Para MongoDB
+                    sessionId: session.sessionId,
+                    startTime: new Date(session.startTime),
+                    endTime: new Date(session.endTime),
+                    duration: session.duration,
+                    dataPoints: session.dataPoints,
+                    summary: session.summary,
+                    measurements: session.measurements.map(measurement => ({
+                        timestamp: new Date(measurement.timestamp),
+                        spo2: measurement.spo2,
+                        co2: measurement.co2,
+                        hr: measurement.hr,
+                        spo2Status: measurement.spo2Status,
+                        co2Status: measurement.co2Status,
+                        hrStatus: measurement.hrStatus
+                    }))
+                }))
+            };
+            
+            return exportData;
+        }
+        
+        // Función para mostrar datos guardados (para debug)
+        function showStoredData() {
+            const sessions = getAllMeasurementSessions();
+            console.log('Sesiones guardadas:', sessions);
+            console.log('Datos para MongoDB:', exportDataForMongoDB());
+            
+            // Mostrar resumen en alert
+            if (sessions.length === 0) {
+                alert('No hay datos guardados aún. Realiza una medición primero.');
+                return;
+            }
+            
+            const totalSessions = sessions.length;
+            const totalDataPoints = sessions.reduce((sum, session) => sum + session.dataPoints, 0);
+            const lastSession = sessions[sessions.length - 1];
+            
+            alert(`📊 Resumen de Datos Guardados:\n\n` +
+                  `Sesiones totales: ${totalSessions}\n` +
+                  `Puntos de datos: ${totalDataPoints}\n` +
+                  `Última sesión: ${new Date(lastSession.startTime).toLocaleString()}\n\n` +
+                  `Revisa la consola del navegador para ver los datos completos.`);
+            
+            return sessions;
+        }
+        
+        // Función para descargar datos como archivo JSON
+        function downloadDataAsJSON() {
+            const data = exportDataForMongoDB();
+            
+            if (data.totalSessions === 0) {
+                alert('No hay datos para descargar. Realiza una medición primero.');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `smartbreathing_data_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ Datos descargados exitosamente!\n\n` +
+                  `Archivo: smartbreathing_data_${new Date().toISOString().split('T')[0]}.json\n` +
+                  `Sesiones: ${data.totalSessions}\n` +
+                  `Formato: Compatible con MongoDB`);
+        }
+
+        // Actualizar métricas cada 2 segundos (solo si no está midiendo)
+        if (!isMeasuring) {
+            setInterval(updateMetrics, 2000);
+        }
         
         // Cargar rutina actual
         async function loadCurrentRoutine() {
