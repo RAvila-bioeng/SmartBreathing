@@ -85,12 +85,31 @@ async def find_user_by_credentials(name: str, last_name: str, password: str) -> 
             'last_name': last_name
         })
         
-        # --- MODIFICATION HERE: Compare plain text passwords ---
+        # --- SECURITY WARNING ---
+        # The current implementation compares passwords in plain text, which is
+        # insecure. It is strongly recommended to migrate to a secure password
+        # hashing mechanism like bcrypt.
+        #
+        # To migrate, you should:
+        # 1. Use the `hash_password.py` script to generate a bcrypt hash for each
+        #    user's password.
+        # 2. Update the `password` field in your MongoDB "Users" collection with
+        #    the generated hash.
+        # 3. Uncomment the secure password verification logic below and remove
+        #    the insecure plain-text comparison.
+        #
+        # --- INSECURE PASSWORD COMPARISON ---
         if user and user.get('password') == password:
             return user
-        # ------------------------------------------------------
         return None
+
+        # --- SECURE PASSWORD VERIFICATION (Recommended) ---
+        # if user and user.get('password'):
+        #     stored_hash = user.get('password').encode('utf-8')
+        #     if bcrypt.checkpw(password.encode('utf-8'), stored_hash):
+        #         return user
+        # return None
         
     except Exception as e:
         logger.error(f"Error finding user: {e}")
-        return None
+        return None 
