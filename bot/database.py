@@ -1,9 +1,10 @@
 import os
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import motor.motor_asyncio
 from dotenv import load_dotenv
 from telegram.ext import Application
+import bcrypt
 
 load_dotenv()
 
@@ -49,12 +50,12 @@ async def update_user(user_id: int, user_data: Dict[str, Any]):
     """
     Updates or inserts a user's profile in the database and logs the result.
     """
-    if not db.is_connected or not db.db:
+    if not db.is_connected or db.db is None:
         logger.error("Database is not connected. Cannot update user data.")
         return
     
     try:
-        users_collection = db.db.users
+        users_collection = db.db.Users
         result = await users_collection.update_one(
             {'user_id': user_id},
             {'$set': user_data},
@@ -74,3 +75,22 @@ async def update_user(user_id: int, user_data: Dict[str, Any]):
 def is_database_connected() -> bool:
     """Returns the current status of the database connection."""
     return db.is_connected
+
+async def find_user_by_credentials(name: str, last_name: str, password: str) -> Optional[Dict[str, Any]]:
+    # ... (rest of the code remains the same)
+    try:
+        users_collection = db.db.Users
+        user = await users_collection.find_one({
+            'name': name,
+            'last_name': last_name
+        })
+        
+        # --- MODIFICATION HERE: Compare plain text passwords ---
+        if user and user.get('password') == password:
+            return user
+        # ------------------------------------------------------
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error finding user: {e}")
+        return None
