@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartBreathing - Menú</title>
+  <style>
+    body {
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height:100vh;
+      padding:20px;
+    }
+    .menu-container {
+      max-width:400px;
+      background:white;
+      border-radius:18px;
+      padding:40px 30px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.10);
+      margin:60px auto;
+      text-align:center;
+    }
+    h1 {
+      font-size:2rem;
+      color:#667eea;
+      margin-bottom:30px;
+    }
+    .btn-menu {
+      display:block;
+      width:100%;
+      margin:18px 0;
+      padding:16px;
+      font-size:1.3rem;
+      font-weight:600;
+      border-radius:28px;
+      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white;
+      border:none;
+      cursor:pointer;
+      transition:box-shadow 0.25s, transform 0.25s;
+    }
+    .btn-menu:hover {
+      box-shadow:0 6px 24px rgba(102, 126, 234, 0.22);
+      transform:translateY(-3px);
+    }
+    .menu-desc {
+      margin-bottom:20px;
+      font-size:1.15rem;
+      color:#444;
+      opacity:0.87;
+    }
+  </style>
+</head>
+<body>
+  <div class="menu-container">
+    <h1>🧘‍♂️ SmartBreathing</h1>
+    <div class="menu-desc">
+      Bienvenido.<br>Elige una opción para continuar:
+    </div>
+    <button class="btn-menu" onclick="window.location.href='nuevo_usuario.html'">Crear nuevo usuario</button>
+    <button class="btn-menu" onclick="window.location.href='index.html'">Iniciar mediciones</button>
+  </div>
+</body>
+</html>
