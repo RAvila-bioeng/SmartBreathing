@@ -95,23 +95,43 @@
   </div>
 
   <script>
-    function enviarUsuario(event) {
+    async function enviarUsuario(event) {
       event.preventDefault();
-      const nombre = document.getElementById('nombre').value.trim();
-      const apellido = document.getElementById('apellido').value.trim();
-      const codigo = document.getElementById('codigo').value.trim();
+      const name = document.getElementById('nombre').value.trim();
+      const last_name = document.getElementById('apellido').value.trim();
+      const code = document.getElementById('codigo').value.trim();
 
-      if (!nombre || !apellido || !codigo) {
+      if (!name || !last_name || !code) {
         mostrarMensaje("Por favor, rellena todos los campos.", true);
         return;
       }
 
-      // Para pruebas locales, solo mostramos mensaje y volvemos al menú.
-      mostrarMensaje("Usuario creado correctamente.", false);
+      // Los nombres de las claves deben coincidir con tu backend
+      const userData = { nombre: name, apellido: last_name, codigo: code };
 
-      setTimeout(function() {
-        window.location.href = "menu.html";
-      }, 1200);
+      try {
+        const response = await fetch('http://localhost:8000/api/users/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          mostrarMensaje("Usuario creado correctamente.", false);
+          setTimeout(() => {
+            window.location.href = "menu.html";
+          }, 1200);
+        } else {
+          mostrarMensaje(`Error: ${result.detail || 'No se pudo crear el usuario.'}`, true);
+        }
+      } catch (error) {
+        console.error('Error al enviar el formulario:', error);
+        mostrarMensaje("Error de conexión. Inténtalo de nuevo.", true);
+      }
     }
 
     function mostrarMensaje(msg, esError) {
@@ -125,3 +145,5 @@
   </script>
 </body>
 </html>
+
+

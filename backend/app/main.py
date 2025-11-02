@@ -1,18 +1,33 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
 
-from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation
+from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate
 from .db import get_database
 from .ai_engine import SmartBreathingAI
 
 app = FastAPI(title="SmartBreathing API", version="0.1.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # o ["http://localhost:8080"] si prefieres limitar solo al frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Build absolute path to frontend directory to avoid path issues
+main_py_path = os.path.abspath(__file__)
+backend_app_dir = os.path.dirname(main_py_path)
+project_root = os.path.dirname(os.path.dirname(backend_app_dir))
+frontend_dir = os.path.join(project_root, "frontend")
+
 # Montar archivos estáticos para el frontend
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 # Inicializar AI engine
 ai_engine = SmartBreathingAI()
@@ -20,7 +35,10 @@ ai_engine = SmartBreathingAI()
 @app.get("/")
 async def serve_frontend():
     """Sirve el frontend principal"""
-    return FileResponse("../frontend/index.html")
+    index_path = os.path.join(frontend_dir, "index.html")
+    if not os.path.exists(index_path):
+        raise HTTPException(status_code=404, detail="index.html not found")
+    return FileResponse(index_path)
 
 @app.get("/health")
 def health_check() -> dict:
@@ -44,6 +62,48 @@ async def get_user_by_telegram(telegram_id: int):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return UserProfile(**user_data)
 
+@app.post("/api/users/create")
+async def create_new_user(user: UserCreate):
+    """Crear un nuevo usuario desde el formulario de registro"""
+    db = get_database()
+
+    # Comprobar si el usuario ya existe por código
+    existing_user = db.users.find_one({"codigo": user.codigo})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="El código de usuario ya existe.")
+
+    # Crear un diccionario con los datos del nuevo usuario
+    new_user_data = {
+        "name": f"{user.nombre} {user.apellido}",
+        "codigo": user.codigo,
+        "telegram_id": 0,  # Valor por defecto o a ser actualizado después
+        "age": 0,
+        "weight": 0.0,
+        "gender": "other",
+        "sport_preference": "none",
+        "fitness_level": "beginner",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+
+    # Insertar el nuevo usuario en la base de datos
+    result = db.users.insert_one(new_user_data)
+
+    # Comprobar si la inserción fue exitosa
+    if not result.inserted_id:
+        raise HTTPException(status_code=500, detail="No se pudo crear el usuario.")
+
+    return {"status": "success", "message": "Usuario creado correctamente", "user_id": str(result.inserted_id)}
+
+@app.get("/api/users/list")
+async def list_users():
+    """Listar todos los usuarios"""
+    db = get_database()
+    usuarios = list(db.users.find())
+    for usuario in usuarios:
+        usuario["_id"] = str(usuario["_id"])
+    return usuarios
+
 # Endpoints de datos de sensores
 @app.post("/api/sensors/reading", response_model=SensorReading)
 async def create_sensor_reading(reading: SensorReading):
@@ -51,11 +111,11 @@ async def create_sensor_reading(reading: SensorReading):
     db = get_database()
     result = db.sensor_readings.insert_one(reading.dict(by_alias=True))
     reading.id = result.inserted_id
-    
+
     # Generar recomendación automática usando ChatGPT
     if reading.user_id:
         analysis = ai_engine.analyze_physiological_data(str(reading.user_id))
-        
+
         # Si el análisis contiene recomendaciones, guardarlas
         if analysis.get("recommendations"):
             for rec in analysis["recommendations"]:
@@ -67,7 +127,6 @@ async def create_sensor_reading(reading: SensorReading):
                     based_on_metrics={"analysis": analysis}
                 )
                 db.recommendations.insert_one(recommendation.dict(by_alias=True))
-    
     return reading
 
 @app.get("/api/sensors/readings/{user_id}", response_model=List[SensorReading])
@@ -127,17 +186,17 @@ async def generate_ai_routine(user_id: str, goals: List[str] = None):
         user_data = db.users.find_one({"_id": user_id})
         if not user_data:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         user_profile = UserProfile(**user_data)
         goals = goals or ["general_fitness"]
-        
+
         # Generar rutina con IA
         routine = ai_engine.create_personalized_routine(user_profile, goals)
-        
+
         # Guardar rutina
         result = db.routines.insert_one(routine.dict(by_alias=True))
         routine.id = result.inserted_id
-        
+
         return routine
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generando rutina: {str(e)}")
@@ -152,5 +211,8 @@ async def get_user_recommendations(user_id: str, limit: int = 10):
         limit=limit
     ))
     return [AIRecommendation(**r) for r in recommendations]
+
+
+
 
 
