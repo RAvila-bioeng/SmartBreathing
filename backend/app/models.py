@@ -4,20 +4,25 @@ from pydantic import BaseModel, Field
 from bson import ObjectId
 
 
+from pydantic_core import core_schema
+from typing import Any
+
 class PyObjectId(ObjectId):
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: Any
+    ) -> core_schema.CoreSchema:
+        return core_schema.json_or_python_schema(
+            python_schema=core_schema.with_info_plain_validator_function(cls.validate),
+            json_schema=core_schema.str_schema(),
+            serialization=core_schema.plain_serializer_function_ser_schema(lambda x: str(x)),
+        )
 
     @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid objectid")
-        return ObjectId(v)
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+    def validate(cls, v: Any, *args, **kwargs) -> ObjectId:
+        if ObjectId.is_valid(v):
+            return ObjectId(v)
+        raise ValueError("Invalid ObjectId")
 
 
 class UserProfile(BaseModel):
@@ -33,9 +38,32 @@ class UserProfile(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
+
+from pydantic import BaseModel
+
+
+from pydantic import BaseModel
+
+class UserCreate(BaseModel):
+    nombre: str
+    apellido: str
+    codigo: str
+    condiciones_limitantes: str
+    edad: int
+    peso: float
+    sport_preference: str
+    fitness_level: str
+    objetivo_deportivo: str
+    grado_exigencia: str
+    frecuencia_entrenamiento: int
+    tiempo_dedicable_diario: int
+    equipamiento: str
+
+
 
 
 class SensorReading(BaseModel):
@@ -50,7 +78,7 @@ class SensorReading(BaseModel):
     respiratory_rate: Optional[float] = None  # Frecuencia respiratoria (rpm)
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -67,7 +95,7 @@ class Exercise(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -85,7 +113,7 @@ class WorkoutRoutine(BaseModel):
     is_active: bool = True
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -101,6 +129,7 @@ class AIRecommendation(BaseModel):
     is_applied: bool = False
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+

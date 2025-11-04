@@ -22,7 +22,7 @@ def get_mongo_client() -> MongoClient:
 
 
 def get_database() -> Database:
-    db_name = os.getenv("MONGODB_DB", "smartbreathing")
+    db_name = os.getenv("MONGODB_DB", "SmartBreathing")
     return get_mongo_client()[db_name]
 
 

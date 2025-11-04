@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartBreathing - Datos del perfil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height:100vh;
+      padding:20px;
+    }
+    .form-container {
+      max-width:400px;
+      background:white;
+      border-radius:18px;
+      padding:40px 30px 24px 30px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.10);
+      margin:60px auto 0 auto;
+      text-align:center;
+    }
+    .form-container h1 {
+      font-size:2rem;
+      color:#667eea;
+      margin-bottom:24px;
+    }
+    .user-form label {
+      display:block;
+      margin:14px 0 6px 0;
+      font-size:1.01rem;
+      color:#444;
+      opacity:0.87;
+      text-align:left;
+      font-weight:500;
+    }
+    .user-input {
+      width:95%;
+      padding:12px;
+      border-radius:9px;
+      border:1px solid #ccc;
+      font-size:1.13rem;
+      margin-bottom:6px;
+      background:#f6f8ff;
+      transition:border 0.2s;
+    }
+    .user-input:focus {
+      border:1.5px solid #667eea;
+      outline: none;
+      background:#eef2ff;
+    }
+    .btn-user {
+      display:block;
+      width:100%;
+      margin:22px 0 0 0;
+      padding:16px;
+      font-size:1.16rem;
+      font-weight:600;
+      border-radius:28px;
+      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white;
+      border:none;
+      cursor:pointer;
+      transition:box-shadow 0.23s, transform 0.23s;
+    }
+    .btn-user:hover {
+      box-shadow:0 4px 18px rgba(102, 126, 234, 0.18);
+      transform:translateY(-2px);
+    }
+    .mensaje {
+      margin-top:18px;
+      font-size:1.08rem;
+      font-weight:500;
+      color: #F44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h1>Datos del perfil</h1>
+    <form class="user-form" onsubmit="irAPersonalizacion(event)">
+      <label for="nombre">Nombre</label>
+      <input class="user-input" type="text" id="nombre" required>
+      <label for="apellido">Apellido</label>
+      <input class="user-input" type="text" id="apellido" required>
+      <label for="codigo">Código</label>
+      <input class="user-input" type="text" id="codigo" required>
+      <label for="condiciones">¿Condiciones limitantes?</label>
+      <select class="user-input" id="condiciones" required>
+        <option value="">Selecciona</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+      </select>
+      <label for="edad">Edad</label>
+      <input class="user-input" type="number" id="edad" required>
+      <label for="peso">Peso (kg)</label>
+      <input class="user-input" type="number" step="0.1" id="peso" required>
+      <button type="submit" class="btn-user">Siguiente</button>
+    </form>
+    <div class="mensaje" id="mensaje-usuario"></div>
+  </div>
+
+  <script>
+    function irAPersonalizacion(event) {
+      event.preventDefault();
+      const datos = {
+        nombre: document.getElementById('nombre').value.trim(),
+        apellido: document.getElementById('apellido').value.trim(),
+        codigo: document.getElementById('codigo').value.trim(),
+        condiciones_limitantes: document.getElementById('condiciones').value,
+        edad: document.getElementById('edad').value,
+        peso: document.getElementById('peso').value
+      };
+      if (Object.values(datos).some(val => val === "")) {
+        document.getElementById('mensaje-usuario').textContent = "Por favor, rellena todos los campos.";
+        return;
+      }
+      localStorage.setItem('datosPerfilUsuario', JSON.stringify(datos));
+      window.location.href = "nuevo_usuario_paso2.html";
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
