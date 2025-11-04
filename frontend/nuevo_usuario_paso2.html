@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartBreathing - Personalización</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height:100vh;
+      padding:20px;
+    }
+    .form-container {
+      max-width:400px;
+      background:white;
+      border-radius:18px;
+      padding:40px 30px 24px 30px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.10);
+      margin:60px auto;
+      text-align:center;
+    }
+    .form-container h1 {
+      font-size:2rem;
+      color:#667eea;
+      margin-bottom:24px;
+    }
+    .user-form label {
+      display:block;
+      margin:14px 0 6px 0;
+      font-size:1.01rem;
+      color:#444;
+      opacity:0.87;
+      text-align:left;
+      font-weight:500;
+    }
+    .user-input {
+      width:95%;
+      padding:12px;
+      border-radius:9px;
+      border:1px solid #ccc;
+      font-size:1.13rem;
+      margin-bottom:6px;
+      background:#f6f8ff;
+      transition:border 0.2s;
+    }
+    .user-input:focus {
+      border:1.5px solid #667eea;
+      outline: none;
+      background:#eef2ff;
+    }
+    .btn-user {
+      display:block;
+      width:100%;
+      margin:22px 0 0 0;
+      padding:16px;
+      font-size:1.16rem;
+      font-weight:600;
+      border-radius:28px;
+      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color:white;
+      border:none;
+      cursor:pointer;
+      transition:box-shadow 0.23s, transform 0.23s;
+    }
+    .btn-user:hover {
+      box-shadow:0 4px 18px rgba(102, 126, 234, 0.18);
+      transform:translateY(-2px);
+    }
+    .mensaje {
+      margin-top:18px;
+      font-size:1.08rem;
+      font-weight:500;
+      color: #F44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h1>Personalización</h1>
+    <form class="user-form" id="personalizacion-form" onsubmit="enviarUsuario(event)">
+      <label>Preferencia de deporte:
+        <select class="user-input" id="deporte" required>
+          <option value="">Selecciona</option>
+          <option value="gimnasio">Gimnasio</option>
+          <option value="natacion">Natación</option>
+          <option value="atletismo">Atletismo</option>
+        </select>
+      </label>
+      <label>Nivel deportivo:
+        <select class="user-input" id="fitness_level" required>
+          <option value="">Selecciona</option>
+          <option value="principiante">Principiante</option>
+          <option value="intermedio">Intermedio</option>
+          <option value="avanzado">Avanzado</option>
+          <option value="profesional">Profesional</option>
+        </select>
+      </label>
+      <label>Objetivo deportivo:
+        <select class="user-input" id="objetivo" required>
+          <option value="">Selecciona</option>
+          <option value="perder_peso">Perder peso</option>
+          <option value="ganar_masa_muscular">Ganar masa muscular</option>
+          <option value="mantenerse_en_forma">Mantenerse en forma</option>
+          <option value="ganar_peso">Ganar peso</option>
+        </select>
+      </label>
+      <label>Grado de exigencia:
+        <select class="user-input" id="grado_exigencia" required>
+          <option value="">Selecciona</option>
+          <option value="bajo">Bajo</option>
+          <option value="moderado">Moderado</option>
+          <option value="exigente">Exigente</option>
+        </select>
+      </label>
+      <label>Frecuencia de entrenamiento (días/semana):
+        <select class="user-input" id="frecuencia" required>
+          <option value="">Selecciona</option>
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+      </label>
+      <label>Tiempo dedicable diario (minutos):
+        <input class="user-input" type="number" id="tiempo_dedicable" required>
+      </label>
+      <label>Equipamiento:
+        <select class="user-input" id="equipamiento" required>
+          <option value="">Selecciona</option>
+          <option value="instalaciones">En instalaciones</option>
+          <option value="casa_con_equipamiento">Casa con equipamiento</option>
+          <option value="casa_sin_equipamiento">Casa sin equipamiento</option>
+        </select>
+      </label>
+      <button type="submit" class="btn-user">Crear usuario</button>
+    </form>
+    <div class="mensaje" id="mensaje-usuario"></div>
+  </div>
+  <script>
+    async function enviarUsuario(event) {
+      event.preventDefault();
+      const paso1 = JSON.parse(localStorage.getItem('datosPerfilUsuario') || "{}");
+      const userData = {
+        ...paso1,
+        sport_preference: document.getElementById('deporte').value,
+        fitness_level: document.getElementById('fitness_level').value,
+        objetivo_deportivo: document.getElementById('objetivo').value,
+        grado_exigencia: document.getElementById('grado_exigencia').value,
+        frecuencia_entrenamiento: parseInt(document.getElementById('frecuencia').value, 10),
+        tiempo_dedicable_diario: document.getElementById('tiempo_dedicable').value,
+        equipamiento: document.getElementById('equipamiento').value
+      };
+
+      try {
+        const response = await fetch('http://localhost:8000/api/users/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+        const result = await response.json();
+        if (response.ok) {
+          document.getElementById('mensaje-usuario').style.color = "#4CAF50";
+          document.getElementById('mensaje-usuario').textContent = "Usuario creado correctamente.";
+          setTimeout(() => {
+            window.location.href = "menu.html";
+          }, 1200);
+        } else {
+          document.getElementById('mensaje-usuario').textContent = "Error: " + (result.detail || "No se pudo crear el usuario.");
+        }
+      } catch (error) {
+        document.getElementById('mensaje-usuario').textContent = "Error de conexión. Inténtalo de nuevo.";
+      }
+    }
+  </script>
+</body>
+</html>
+

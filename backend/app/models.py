@@ -43,10 +43,27 @@ class UserProfile(BaseModel):
         json_encoders = {ObjectId: str}
 
 
+from pydantic import BaseModel
+
+
+from pydantic import BaseModel
+
 class UserCreate(BaseModel):
     nombre: str
     apellido: str
     codigo: str
+    condiciones_limitantes: str
+    edad: int
+    peso: float
+    sport_preference: str
+    fitness_level: str
+    objetivo_deportivo: str
+    grado_exigencia: str
+    frecuencia_entrenamiento: int
+    tiempo_dedicable_diario: int
+    equipamiento: str
+
+
 
 
 class SensorReading(BaseModel):
