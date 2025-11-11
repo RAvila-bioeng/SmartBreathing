@@ -133,6 +133,14 @@
           <option value="casa_sin_equipamiento">Casa sin equipamiento</option>
         </select>
       </label>
+      <label>Sistema de Recompensas:
+        <select class="user-input" id="sistema_recompensas" required>
+          <option value="">Selecciona</option>
+          <option value="comida">Comida</option>
+          <option value="menos_ejercicio">Menos ejercicio</option>
+          <option value="halago">Halago</option>
+        </select>
+      </label>
       <button type="submit" class="btn-user">Crear usuario</button>
     </form>
     <div class="mensaje" id="mensaje-usuario"></div>
@@ -140,6 +148,14 @@
   <script>
     async function enviarUsuario(event) {
       event.preventDefault();
+
+      // Validación extra
+      const sistemaRecompensas = document.getElementById('sistema_recompensas').value;
+      if (sistemaRecompensas === "") {
+        document.getElementById('mensaje-usuario').textContent = "Por favor, selecciona un tipo de recompensa.";
+        return;
+      }
+
       const paso1 = JSON.parse(localStorage.getItem('datosPerfilUsuario') || "{}");
       const userData = {
         ...paso1,
@@ -149,7 +165,8 @@
         grado_exigencia: document.getElementById('grado_exigencia').value,
         frecuencia_entrenamiento: parseInt(document.getElementById('frecuencia').value, 10),
         tiempo_dedicable_diario: document.getElementById('tiempo_dedicable').value,
-        equipamiento: document.getElementById('equipamiento').value
+        equipamiento: document.getElementById('equipamiento').value,
+        sistema_recompensas: sistemaRecompensas
       };
 
       try {
@@ -177,4 +194,5 @@
   </script>
 </body>
 </html>
+
 

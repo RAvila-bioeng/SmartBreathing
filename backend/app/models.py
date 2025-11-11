@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from bson import ObjectId
-
-
 from pydantic_core import core_schema
 from typing import Any
 
@@ -24,7 +22,6 @@ class PyObjectId(ObjectId):
             return ObjectId(v)
         raise ValueError("Invalid ObjectId")
 
-
 class UserProfile(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     telegram_id: int
@@ -42,12 +39,6 @@ class UserProfile(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-
-from pydantic import BaseModel
-
-
-from pydantic import BaseModel
-
 class UserCreate(BaseModel):
     nombre: str
     apellido: str
@@ -62,9 +53,7 @@ class UserCreate(BaseModel):
     frecuencia_entrenamiento: int
     tiempo_dedicable_diario: int
     equipamiento: str
-
-
-
+    sistema_recompensas: str  # <-- campo añadido
 
 class SensorReading(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
@@ -82,7 +71,6 @@ class SensorReading(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-
 class Exercise(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     name: str
@@ -98,7 +86,6 @@ class Exercise(BaseModel):
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
 
 class WorkoutRoutine(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
@@ -116,7 +103,6 @@ class WorkoutRoutine(BaseModel):
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
 
 class AIRecommendation(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
