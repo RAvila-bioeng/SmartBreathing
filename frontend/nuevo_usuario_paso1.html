@@ -4,45 +4,74 @@
   <meta charset="UTF-8">
   <title>SmartBreathing - Datos del perfil</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
     body {
-      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       min-height:100vh;
-      padding:20px;
+      margin:0;
+      background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+      background-size: 200% 200%;
+      animation: gradientMove 12s ease-in-out infinite;
+      box-sizing:border-box;
+    }
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    @keyframes fadeInUp {
+      0% {opacity:0; transform:translateY(36px);}
+      100% {opacity:1; transform:translateY(0);}
     }
     .form-container {
-      max-width:400px;
+      max-width:440px;
       background:white;
-      border-radius:18px;
-      padding:40px 30px 24px 30px;
-      box-shadow:0 10px 30px rgba(0,0,0,0.10);
-      margin:60px auto 0 auto;
+      border-radius:24px;
+      padding:2.7em 2em 2em 2em;
+      box-shadow:0 10px 40px rgba(70,82,210,0.14), 0 1.5px 3px rgba(70,82,210,0.03);
+      margin:56px auto 0 auto;
       text-align:center;
+      position:relative;
+      animation: fadeInUp 0.88s cubic-bezier(.43,.06,.58,1.02);
     }
+    .stepper { display:flex; align-items:center; justify-content:center; margin-bottom:18px; padding-top:10px;}
+    .step {
+      width: 32px; height: 32px; border-radius: 50%; background: #bb9cf5;
+      color: #fff; font-weight:700; font-size:1.13em; display:flex; align-items:center; justify-content:center;
+      margin:0 8px; transition:background 0.3s;
+      opacity:0.95;
+    }
+    .step.active { background: #7678ed; color:#fff; opacity:1;}
+    .bar {height: 5px; width:30px; background: #c8b6e2; border-radius:2px;}
     .form-container h1 {
-      font-size:2rem;
+      font-size:2.15rem;
       color:#667eea;
-      margin-bottom:24px;
+      margin-bottom:13px;
+      font-weight:800;
+      letter-spacing: 0.4px;
+      display:flex; align-items:center; justify-content:center; gap:0.6em;
     }
     .user-form label {
       display:block;
       margin:14px 0 6px 0;
-      font-size:1.01rem;
-      color:#444;
-      opacity:0.87;
+      font-size:1.09rem;
+      color:#496;
+      opacity:0.93;
       text-align:left;
-      font-weight:500;
+      font-weight:600;
+      letter-spacing:0.05em;
     }
     .user-input {
-      width:95%;
+      width:98%;
       padding:12px;
-      border-radius:9px;
-      border:1px solid #ccc;
-      font-size:1.13rem;
-      margin-bottom:6px;
+      border-radius:10px;
+      border:1px solid #c0c3ff;
+      font-size:1.15rem;
+      margin-bottom:8px;
       background:#f6f8ff;
-      transition:border 0.2s;
+      transition:border 0.21s;
+      box-shadow: 0 1.5px 9px rgba(90,90,200,0.06);
     }
     .user-input:focus {
       border:1.5px solid #667eea;
@@ -52,55 +81,102 @@
     .btn-user {
       display:block;
       width:100%;
-      margin:22px 0 0 0;
+      margin:24px 0 0 0;
       padding:16px;
-      font-size:1.16rem;
-      font-weight:600;
+      font-size:1.18rem;
+      font-weight:700;
       border-radius:28px;
       background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color:white;
       border:none;
       cursor:pointer;
-      transition:box-shadow 0.23s, transform 0.23s;
+      box-shadow:0 2px 12px #7865e40c;
+      transition:box-shadow 0.23s, transform 0.23s, background 0.29s;
     }
     .btn-user:hover {
-      box-shadow:0 4px 18px rgba(102, 126, 234, 0.18);
+      box-shadow:0 8px 32px #7865e43f;
+      background:linear-gradient(122deg, #8463e4 0%, #666eaac6 100%);
       transform:translateY(-2px);
     }
     .mensaje {
-      margin-top:18px;
-      font-size:1.08rem;
-      font-weight:500;
+      margin-top:22px;
+      font-size:1.10rem;
+      font-weight:600;
       color: #F44336;
+      min-height:1.2em;
+    }
+    .icono-campo {
+      margin-right:8px;
+      color:#8a6be8;
+      font-size:1.05em;
+    }
+    .toast {
+      visibility: hidden;
+      min-width: 220px;
+      color: white;
+      background: #684CB2;
+      text-align: center;
+      border-radius: 6px;
+      padding: 1.2em;
+      position: fixed;
+      z-index: 100;
+      left: 50%; bottom: 18px;
+      transform: translateX(-50%);
+      transition: opacity 0.4s;
+      opacity: 0;
+    }
+    .toast.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    @media (max-width:600px) {
+      .form-container { padding:1.1em 0.6em 1.4em 0.6em; max-width:97vw; }
+      .step {width:24px;height:24px;font-size:0.96em;}
+      h1 {font-size:1.3em;}
     }
   </style>
 </head>
 <body>
   <div class="form-container">
-    <h1>Datos del perfil</h1>
+    <div class="stepper">
+      <div class="step active">1</div>
+      <div class="bar"></div>
+      <div class="step">2</div>
+    </div>
+    <h1>
+      <i class="fas fa-id-card-alt icono-campo"></i>
+      Datos del perfil
+    </h1>
     <form class="user-form" onsubmit="irAPersonalizacion(event)">
-      <label for="nombre">Nombre</label>
+      <label for="nombre"><i class="fas fa-user icono-campo"></i>Nombre</label>
       <input class="user-input" type="text" id="nombre" required>
-      <label for="apellido">Apellido</label>
+      <label for="apellido"><i class="fas fa-user icono-campo"></i>Apellido</label>
       <input class="user-input" type="text" id="apellido" required>
-      <label for="codigo">Código</label>
+      <label for="codigo"><i class="fas fa-key icono-campo"></i>Código</label>
       <input class="user-input" type="text" id="codigo" required>
-      <label for="condiciones">¿Condiciones limitantes?</label>
+      <label for="condiciones"><i class="fas fa-diagnoses icono-campo"></i>¿Condiciones limitantes?</label>
       <select class="user-input" id="condiciones" required>
         <option value="">Selecciona</option>
         <option value="si">Sí</option>
         <option value="no">No</option>
       </select>
-      <label for="edad">Edad</label>
+      <label for="edad"><i class="fas fa-birthday-cake icono-campo"></i>Edad</label>
       <input class="user-input" type="number" id="edad" required>
-      <label for="peso">Peso (kg)</label>
+      <label for="peso"><i class="fas fa-weight icono-campo"></i>Peso (kg)</label>
       <input class="user-input" type="number" step="0.1" id="peso" required>
-      <button type="submit" class="btn-user">Siguiente</button>
+      <button type="submit" class="btn-user"><i class="fas fa-arrow-right"></i> Siguiente</button>
     </form>
     <div class="mensaje" id="mensaje-usuario"></div>
   </div>
-
+  <div id="toast" class="toast"></div>
   <script>
+    function showToast(msg, color="#684CB2") {
+      let t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.background = color;
+      t.className = "toast show";
+      setTimeout(() => t.className = "toast", 2000);
+    }
     function irAPersonalizacion(event) {
       event.preventDefault();
       const datos = {
@@ -112,7 +188,7 @@
         peso: document.getElementById('peso').value
       };
       if (Object.values(datos).some(val => val === "")) {
-        document.getElementById('mensaje-usuario').textContent = "Por favor, rellena todos los campos.";
+        showToast("Por favor, rellena todos los campos.", "#e13333");
         return;
       }
       localStorage.setItem('datosPerfilUsuario', JSON.stringify(datos));
@@ -121,6 +197,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 

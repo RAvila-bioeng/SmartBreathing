@@ -4,45 +4,74 @@
   <meta charset="UTF-8">
   <title>SmartBreathing - Personalización</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
     body {
-      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       min-height:100vh;
-      padding:20px;
+      margin:0;
+      background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+      background-size: 200% 200%;
+      animation: gradientMove 12s ease-in-out infinite;
+      box-sizing:border-box;
+    }
+    @keyframes gradientMove {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    @keyframes fadeInUp {
+      0% {opacity:0; transform:translateY(36px);}
+      100% {opacity:1; transform:translateY(0);}
     }
     .form-container {
-      max-width:400px;
+      max-width:440px;
       background:white;
-      border-radius:18px;
-      padding:40px 30px 24px 30px;
-      box-shadow:0 10px 30px rgba(0,0,0,0.10);
-      margin:60px auto;
+      border-radius:24px;
+      padding:2.7em 2em 2em 2em;
+      box-shadow:0 10px 40px rgba(70,82,210,0.14), 0 1.5px 3px rgba(70,82,210,0.03);
+      margin:56px auto 0 auto;
       text-align:center;
+      position:relative;
+      animation: fadeInUp 0.88s cubic-bezier(.43,.06,.58,1.02);
     }
+    .stepper { display:flex; align-items:center; justify-content:center; margin-bottom:14px; padding-top:4px;}
+    .step {
+      width: 36px; height: 36px; border-radius: 50%; background: #bb9cf5;
+      color: #fff; font-weight:700; font-size:1.23em; display:flex; align-items:center; justify-content:center;
+      margin:0 8px; transition:background 0.3s;
+      opacity:0.93;
+    }
+    .step.active { background: #7678ed; color:#fff; opacity:1; font-size:1.3em; box-shadow: 0 2px 12px #7654e259;}
+    .bar {height: 5px; width:32px; background: #c8b6e2; border-radius:2px;}
     .form-container h1 {
-      font-size:2rem;
+      font-size:2.18rem;
       color:#667eea;
-      margin-bottom:24px;
+      margin-bottom:19px;
+      font-weight:800;
+      letter-spacing: 0.4px;
+      display:flex; align-items:center; justify-content:center; gap:0.6em;
     }
     .user-form label {
       display:block;
-      margin:14px 0 6px 0;
-      font-size:1.01rem;
-      color:#444;
-      opacity:0.87;
+      margin:13px 0 6px 0;
+      font-size:1.09rem;
+      color:#496;
+      opacity:0.93;
       text-align:left;
-      font-weight:500;
+      font-weight:600;
+      letter-spacing:0.05em;
     }
     .user-input {
-      width:95%;
+      width:98%;
       padding:12px;
-      border-radius:9px;
-      border:1px solid #ccc;
+      border-radius:10px;
+      border:1px solid #c0c3ff;
       font-size:1.13rem;
-      margin-bottom:6px;
+      margin-bottom:8px;
       background:#f6f8ff;
-      transition:border 0.2s;
+      transition:border 0.21s;
+      box-shadow: 0 1.5px 9px rgba(90,90,200,0.06);
     }
     .user-input:focus {
       border:1.5px solid #667eea;
@@ -52,34 +81,71 @@
     .btn-user {
       display:block;
       width:100%;
-      margin:22px 0 0 0;
+      margin:24px 0 0 0;
       padding:16px;
-      font-size:1.16rem;
-      font-weight:600;
+      font-size:1.18rem;
+      font-weight:700;
       border-radius:28px;
       background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color:white;
       border:none;
       cursor:pointer;
-      transition:box-shadow 0.23s, transform 0.23s;
+      box-shadow:0 2px 12px #7865e40c;
+      transition:box-shadow 0.23s, transform 0.23s, background 0.29s;
     }
     .btn-user:hover {
-      box-shadow:0 4px 18px rgba(102, 126, 234, 0.18);
+      box-shadow:0 8px 32px #7865e43f;
+      background:linear-gradient(122deg, #8463e4 0%, #666eaac6 100%);
       transform:translateY(-2px);
     }
     .mensaje {
-      margin-top:18px;
-      font-size:1.08rem;
-      font-weight:500;
+      margin-top:20px;
+      font-size:1.10rem;
+      font-weight:600;
       color: #F44336;
+      min-height:1.3em;
+    }
+    .icono-campo {
+      margin-right:8px;
+      color:#8a6be8;
+      font-size:1.09em;
+    }
+    .toast {
+      visibility: hidden;
+      min-width: 220px;
+      color: white;
+      background: #684CB2;
+      text-align: center;
+      border-radius: 6px;
+      padding: 1.2em;
+      position: fixed;
+      z-index: 100;
+      left: 50%; bottom: 18px;
+      transform: translateX(-50%);
+      transition: opacity 0.4s;
+      opacity: 0;
+    }
+    .toast.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    @media (max-width:600px) {
+      .form-container { padding:1.1em 0.6em 1.4em 0.6em; max-width:97vw; }
+      .step {width:26px;height:26px;font-size:0.96em;}
+      h1 {font-size:1.3em;}
     }
   </style>
 </head>
 <body>
   <div class="form-container">
-    <h1>Personalización</h1>
+    <div class="stepper">
+      <div class="step">1</div>
+      <div class="bar"></div>
+      <div class="step active">2</div>
+    </div>
+    <h1><i class="fas fa-user-cog icono-campo"></i>Personalización</h1>
     <form class="user-form" id="personalizacion-form" onsubmit="enviarUsuario(event)">
-      <label>Preferencia de deporte:
+      <label><i class="fas fa-running icono-campo"></i>Preferencia de deporte:
         <select class="user-input" id="deporte" required>
           <option value="">Selecciona</option>
           <option value="gimnasio">Gimnasio</option>
@@ -87,7 +153,7 @@
           <option value="atletismo">Atletismo</option>
         </select>
       </label>
-      <label>Nivel deportivo:
+      <label><i class="fas fa-chart-line icono-campo"></i>Nivel deportivo:
         <select class="user-input" id="fitness_level" required>
           <option value="">Selecciona</option>
           <option value="principiante">Principiante</option>
@@ -96,7 +162,7 @@
           <option value="profesional">Profesional</option>
         </select>
       </label>
-      <label>Objetivo deportivo:
+      <label><i class="fas fa-bullseye icono-campo"></i>Objetivo deportivo:
         <select class="user-input" id="objetivo" required>
           <option value="">Selecciona</option>
           <option value="perder_peso">Perder peso</option>
@@ -105,7 +171,7 @@
           <option value="ganar_peso">Ganar peso</option>
         </select>
       </label>
-      <label>Grado de exigencia:
+      <label><i class="fas fa-fire icono-campo"></i>Grado de exigencia:
         <select class="user-input" id="grado_exigencia" required>
           <option value="">Selecciona</option>
           <option value="bajo">Bajo</option>
@@ -113,7 +179,7 @@
           <option value="exigente">Exigente</option>
         </select>
       </label>
-      <label>Frecuencia de entrenamiento (días/semana):
+      <label><i class="fas fa-calendar-alt icono-campo"></i>Frecuencia de entrenamiento (días/semana):
         <select class="user-input" id="frecuencia" required>
           <option value="">Selecciona</option>
           <option value="1">1</option><option value="2">2</option>
@@ -122,10 +188,10 @@
           <option value="7">7</option>
         </select>
       </label>
-      <label>Tiempo dedicable diario (minutos):
+      <label><i class="fas fa-clock icono-campo"></i>Tiempo dedicable diario (minutos):
         <input class="user-input" type="number" id="tiempo_dedicable" required>
       </label>
-      <label>Equipamiento:
+      <label><i class="fas fa-dumbbell icono-campo"></i>Equipamiento:
         <select class="user-input" id="equipamiento" required>
           <option value="">Selecciona</option>
           <option value="instalaciones">En instalaciones</option>
@@ -133,7 +199,7 @@
           <option value="casa_sin_equipamiento">Casa sin equipamiento</option>
         </select>
       </label>
-      <label>Sistema de Recompensas:
+      <label><i class="fas fa-gift icono-campo"></i>Sistema de Recompensas:
         <select class="user-input" id="sistema_recompensas" required>
           <option value="">Selecciona</option>
           <option value="comida">Comida</option>
@@ -141,21 +207,28 @@
           <option value="halago">Halago</option>
         </select>
       </label>
-      <button type="submit" class="btn-user">Crear usuario</button>
+      <button type="submit" class="btn-user"><i class="fas fa-user-plus"></i> Crear usuario</button>
     </form>
     <div class="mensaje" id="mensaje-usuario"></div>
   </div>
+  
+  <div id="toast" class="toast"></div>
+  
   <script>
+    function showToast(msg, color="#684CB2") {
+      let t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.background = color;
+      t.className = "toast show";
+      setTimeout(() => t.className = "toast", 2000);
+    }
     async function enviarUsuario(event) {
       event.preventDefault();
-
-      // Validación extra
       const sistemaRecompensas = document.getElementById('sistema_recompensas').value;
       if (sistemaRecompensas === "") {
-        document.getElementById('mensaje-usuario').textContent = "Por favor, selecciona un tipo de recompensa.";
+        showToast("Por favor, selecciona un tipo de recompensa.", "#e13333");
         return;
       }
-
       const paso1 = JSON.parse(localStorage.getItem('datosPerfilUsuario') || "{}");
       const userData = {
         ...paso1,
@@ -168,31 +241,30 @@
         equipamiento: document.getElementById('equipamiento').value,
         sistema_recompensas: sistemaRecompensas
       };
-
       try {
         const response = await fetch('http://localhost:8000/api/users/create', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(userData)
         });
         const result = await response.json();
         if (response.ok) {
-          document.getElementById('mensaje-usuario').style.color = "#4CAF50";
-          document.getElementById('mensaje-usuario').textContent = "Usuario creado correctamente.";
+          showToast("Usuario creado correctamente", "#4CAF50");
           setTimeout(() => {
             window.location.href = "menu.html";
-          }, 1200);
+          }, 1100);
         } else {
-          document.getElementById('mensaje-usuario').textContent = "Error: " + (result.detail || "No se pudo crear el usuario.");
+          showToast("Error: " + (result.detail || "No se pudo crear el usuario."), "#e13333");
         }
       } catch (error) {
-        document.getElementById('mensaje-usuario').textContent = "Error de conexión. Inténtalo de nuevo.";
+        showToast("Error de conexión. Inténtalo de nuevo.", "#e13333");
       }
     }
   </script>
 </body>
 </html>
+
+
+
 
 
