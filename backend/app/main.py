@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -28,6 +28,42 @@ frontend_dir = os.path.join(project_root, "frontend")
 
 # MONTA el directorio de tu frontend SOLO en "/static"
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+# Ruta raíz para servir menu.html (página principal con opciones)
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    with open(os.path.join(frontend_dir, "menu.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# Ruta para servir menu.html
+@app.get("/menu.html", response_class=HTMLResponse)
+async def read_menu():
+    with open(os.path.join(frontend_dir, "menu.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# Ruta para servir login.html
+@app.get("/login.html", response_class=HTMLResponse)
+async def read_login():
+    with open(os.path.join(frontend_dir, "login.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# Ruta para servir index.html (dashboard - requiere login)
+@app.get("/index.html", response_class=HTMLResponse)
+async def read_index():
+    with open(os.path.join(frontend_dir, "index.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# Ruta para servir nuevo_usuario_paso1.html
+@app.get("/nuevo_usuario_paso1.html", response_class=HTMLResponse)
+async def read_nuevo_usuario_paso1():
+    with open(os.path.join(frontend_dir, "nuevo_usuario_paso1.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# Ruta para servir nuevo_usuario_paso2.html
+@app.get("/nuevo_usuario_paso2.html", response_class=HTMLResponse)
+async def read_nuevo_usuario_paso2():
+    with open(os.path.join(frontend_dir, "nuevo_usuario_paso2.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 ai_engine = SmartBreathingAI()
 
@@ -77,12 +113,15 @@ async def list_users():
 
 @app.get("/api/users/by_id/{user_id}")
 async def get_user_by_id(user_id: str):
-    db = get_database()
-    user = db.users.find_one({"_id": ObjectId(user_id)})
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    user["_id"] = str(user["_id"])
-    return user
+    try:
+        db = get_database()
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        user["_id"] = str(user["_id"])
+        return user
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener usuario: {str(e)}")
 
 # Endpoints de datos de sensores
 @app.post("/api/sensors/reading", response_model=SensorReading)
@@ -113,6 +152,33 @@ async def get_user_readings(user_id: str, limit: int = 50):
         limit=limit
     ))
     return [SensorReading(**r) for r in readings]
+
+@app.get("/api/mediciones")
+async def get_mediciones(user_id: str, limit: int = 50):
+    """Endpoint para obtener mediciones del usuario (compatible con frontend)"""
+    try:
+        db = get_database()
+        readings = list(db.sensor_readings.find(
+            {"user_id": user_id},
+            sort=[("timestamp", -1)],
+            limit=limit
+        ))
+        # Convertir a formato que espera el frontend
+        mediciones = []
+        for r in readings:
+            medicion = {
+                "spo2": r.get("spo2"),
+                "co2": r.get("co2"),
+                "hr": r.get("hr"),
+                "grasa_porc": r.get("grasa_porc"),
+                "timestamp": r.get("timestamp")
+            }
+            mediciones.append(medicion)
+        return mediciones
+    except Exception as e:
+        # Si hay error (por ejemplo, MongoDB no disponible), devolver lista vacía
+        # para que el frontend pueda cargar aunque no haya datos
+        return []
 
 @app.post("/api/routines/", response_model=WorkoutRoutine)
 async def create_routine(routine: WorkoutRoutine):
