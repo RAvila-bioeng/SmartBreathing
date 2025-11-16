@@ -18,7 +18,7 @@ install-ingestion:
 	cd ingestion && $(PY) -m venv .venv && .\.venv\Scripts\pip install -U pip && .\.venv\Scripts\pip install -r requirements.txt
 
 api:
-	cd backend && .\.venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && .\.venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --reload-exclude "*.venv/*" --reload-exclude "*__pycache__/*"
 
 frontend:
 	cd frontend && python -m http.server 3000

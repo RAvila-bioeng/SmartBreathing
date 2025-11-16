@@ -312,6 +312,18 @@ class SmartBreathingBot:
         if data == "main_menu":
             await self._show_main_menu(update, context, user_data)
         
+        elif data == "status":
+            await self.status_command(update, context)
+
+        elif data == "data":
+            await self.data_command(update, context)
+
+        elif data == "routines":
+            await self.routine_command(update, context)
+
+        elif data == "analysis":
+            await self.analysis_command(update, context)
+
         elif data == "full_analysis":
             await self.analysis_command(update, context)
         
@@ -324,6 +336,16 @@ class SmartBreathingBot:
         
         elif data == "detailed_data":
             await self.data_command(update, context)
+
+        elif data == "chat":
+            await query.edit_message_text(
+                "You can now chat with the AI. Just send a message."
+            )
+        
+        elif data == "settings":
+            await query.edit_message_text(
+                "The settings section is currently under development. Please check back later."
+            )
     
     async def _show_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE, user_data: Dict) -> None:
         """Shows main menu"""

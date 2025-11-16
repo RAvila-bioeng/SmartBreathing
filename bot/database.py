@@ -55,7 +55,7 @@ async def update_user(user_id: int, user_data: Dict[str, Any]):
         return
     
     try:
-        users_collection = db.db.Users
+        users_collection = db.db.users
         result = await users_collection.update_one(
             {'user_id': user_id},
             {'$set': user_data},
@@ -79,7 +79,7 @@ def is_database_connected() -> bool:
 async def find_user_by_credentials(name: str, last_name: str, password: str) -> Optional[Dict[str, Any]]:
     # ... (rest of the code remains the same)
     try:
-        users_collection = db.db.Users
+        users_collection = db.db.users
         user = await users_collection.find_one({
             'name': name,
             'last_name': last_name
