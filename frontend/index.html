@@ -8,127 +8,187 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
   <style>
-    * {margin:0; padding:0; box-sizing:border-box;}
     body {
-      font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-      min-height:100vh;
-      margin:0;
-      padding:0;
-      background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
-      background-size: 200% 200%;
-      animation: gradientMove 12s ease-in-out infinite;
-    }
-    @keyframes gradientMove {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%);
+      min-height: 100vh;
     }
     .container {
-      max-width:1200px;
-      margin:26px auto;
-      padding: 34px 16px 38px 16px;
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(7px);
+      max-width: 1120px;
+      margin: 24px auto 40px auto;
+      background: rgba(255,255,255,0.96);
       border-radius: 28px;
-      box-shadow: 0 20px 80px rgba(106, 91, 210, 0.13),
-        0 1.5px 3px rgba(120, 80, 210, 0.05);
-      animation: fadeInUp 0.9s cubic-bezier(.43,.06,.58,1.02);
-    }
-    @keyframes fadeInUp {
-      0% {opacity:0; transform: translateY(48px);}
-      100% {opacity:1; transform: translateY(0);}
+      box-shadow: 0 7px 32px rgba(70,82,210,0.11), 0 1px 2px rgba(70,82,210,0.08);
+      padding: 2.3em 2.1em 2.5em 2.1em;
+      min-height: 90vh;
     }
     .header {
-      text-align:center;
-      color:#5363dd;
-      margin-bottom:30px;
+      text-align: center;
+      margin-bottom: 24px;
     }
     .header h1 {
-      font-family:'Poppins',Segoe UI,Tahoma,Verdana,sans-serif;
-      font-size:2.35rem;
-      font-weight:800;
-      background:linear-gradient(90deg,#7a67ee 35%,#5962e8 90%);
-      background-clip:text;-webkit-background-clip:text;
-      color:transparent;-webkit-text-fill-color:transparent;
-      margin-bottom:10px;
-      letter-spacing:0.04em;
-      display: flex; align-items: center; justify-content: center; gap: .38em;
-      border-bottom: 3px solid #b5a1ff36; width: fit-content; margin:0 auto 16px auto; padding-bottom: 4px;
+      color: #6066dc;
+      font-weight: 900;
+      font-size: 2.16em;
+      margin-bottom: 5px;
+      margin-top: 5px;
+      letter-spacing: .01em;
     }
-    .header p {font-size:1.25rem; opacity:0.87;}
+    .header p {
+      color: #474b6a;
+      font-weight: 600;
+      letter-spacing: .01em;
+      margin-bottom: 8px;
+      margin-top: 0;
+      font-size: 1.19em;
+    }
+    .manual-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 38px;
+      margin-top: 20px;
+      font-size: 1.09em;
+      background: #f9fafe;
+      padding: 18px 26px 16px 26px;
+      border-radius: 17px;
+      box-shadow: 0 2px 15px #e5e7fe11;
+    }
+    .manual-form label {
+      font-weight: 700;
+      letter-spacing: .01em;
+      margin-right: 7px;
+      color: #434894;
+    }
+    .manual-form input[type="number"] {
+      padding: 7px 14px;
+      font-size: 1.13em;
+      border-radius: 10px;
+      border: 1.2px solid #bbc6f8;
+      outline: none;
+      max-width: 95px;
+      text-align: right;
+      background: #f5f6fa;
+    }
+    .manual-form button {
+      padding: 12px 22px;
+      font-size: 1.18em;
+      border-radius: 14px;
+      border: none;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%);
+      cursor: pointer;
+    }
+    .manual-form button:hover {
+      background: linear-gradient(102deg, #764ba2 0%, #667eea 100%);
+    }
+    .success-message {
+      color:#20bb4f;
+      font-weight:700;
+      text-align:center;
+      margin-bottom:1.3em;
+      font-size:1.16em;
+    }
+    .error-message {
+      color:#f44336;
+      font-weight:700;
+      text-align:center;
+      margin-bottom:1.3em;
+    }
     .metrics-grid {
-      display: grid;
-      grid-template-columns:repeat(auto-fit, minmax(290px,1fr));
-      gap:22px; margin-bottom:28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      margin: 25px 0 28px 0;
     }
     .metric-card {
-      background: rgba(255,255,255,0.91);
-      border-radius: 19px;
-      padding: 26px 28px;
-      box-shadow: 0 8px 36px #928ae034, 0 4px 21px #7c88dd21;
-      transition: box-shadow 0.19s, transform 0.16s;
-      position: relative;
+      background: #f9fafe;
+      border-radius: 21px;
+      min-width: 211px;
+      min-height: 120px;
+      padding: 15px 20px 17px 20px;
+      box-shadow: 0 1px 16px #8896ee16;
       text-align: center;
+      margin-bottom: 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
     }
-    .metric-card:hover {box-shadow:0 14px 45px #8e84dd3c; transform:translateY(-4px);}
     .metric-title {
-      font-size:1.07rem;
-      color:#44457d;
-      margin-bottom:13px;
-      font-weight:700;
-      letter-spacing:0.03em;
-      display: flex; align-items: center; justify-content: center; gap: 0.4em;
+      font-size: 1.08em;
+      font-weight: 800;
+      color: #554ab8;
+      margin-bottom: 4px;
+      letter-spacing: .02em;
     }
-    .metric-value {font-size:2.3rem; font-weight:800; color:#6b59e9; margin-bottom:7px;}
-    .metric-unit {font-size:0.98rem; color:#777;}
-    .chart-container {
-      background: rgba(255,255,255,0.96);
-      border-radius: 19px;
-      padding: 30px 15px 25px 15px;
-      box-shadow:0 10px 39px #a39ef34c;
-      margin-bottom:18px;
+    .metric-value {
+      font-size: 2.05em;
+      font-weight: bold;
+      margin: 5px 0 2px 0;
+      color:#293265;
     }
-    .chart-title {
-      font-size:1.22rem; color:#4332b8;
-      margin-bottom:24px; font-weight:700;
-      letter-spacing: 0.03em;
-      display: flex; align-items: center; gap:0.50em;
+    .metric-unit {
+      position: absolute;
+      right: 13px;
+      top: 9px;
+      color: #8797e8;
+      font-size: 1.01em;
+      font-weight: 800;
     }
     .status-indicator {
-      display:inline-block; width:13px; height:13px; border-radius:50%; margin-right:8px; margin-bottom:-2px;
-      box-shadow: 0 1.5px 8px #7c88dd2e;
+      display: inline-block;
+      width: 18px; height: 18px;
+      border-radius: 100%;
+      margin-right: 7px;
+      vertical-align: middle;
+      border: 2px solid #bfc9ec;
     }
-    .status-good { background-color: #37d682; }
-    .status-warning { background-color: #FF9800;}
-    .status-danger { background-color: #F44336;}
-    .loading { text-align:center; color:#666; font-style:italic; }
-    .button-next {
-      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white;
-      border:none;
-      padding:15px 30px;
-      font-size:1.13rem;
-      border-radius:25px;
-      cursor:pointer;
-      transition:all 0.22s;
-      font-weight:700;
-      margin-top:15px; display:block; margin-left:auto; margin-right:auto;
-      box-shadow:0 2px 12px #856cf92d,0 7px 28px #6d60e631;
+    .status-good {background: #7af77a; border-color: #48e248;}
+    .status-warning {background: #FFEA6C; border-color:#f7ca33;}
+    .status-danger {background: #f77070; border-color: #e94c4c;}
+    .chart-container {
+      background: #fff;
+      border-radius: 17px;
+      box-shadow: 0 1px 13px #bbbcea10;
+      padding: 19px 22px;
+      margin-bottom: 28px;
+      margin-top: 28px;
+      max-width: 850px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    .button-next:hover {
-      box-shadow:0 7px 19px #846ae44a;
-      background: linear-gradient(104deg,#8463e4 0%, #666eaac6 100%);
-      transform: translateY(-2px);
+    .chart-title {
+      font-size:1.14em;
+      font-weight: bold;
+      color:#6066dc;
+      letter-spacing:.01em;
+      margin-bottom: 10px;
+      margin-top: 0;
+      display:flex; align-items:center; gap:7px;
     }
-    @media (max-width: 700px){
-      .container {padding:7px 0.2em;}
-      .metric-card, .chart-container {padding:18px 4px 16px 4px;}
-      .metrics-grid {gap:10px;}
+    @media (max-width: 1000px){
+      .container {max-width:99vw; padding:1.6em 0.5em;}
+      .chart-container {padding:5px 1em;}
+      .metrics-grid {gap: 9px;}
+      .metric-card {min-width:140px; font-size:0.98em;}
     }
-    @media (max-width:480px){
-      .header h1 {font-size:1.3em;}
-      .chart-title {font-size: 1em;}
-      .chart-container, .metric-card {padding:12px 0.4em;}
+    @media (max-width: 650px) {
+      .metrics-grid {flex-direction:column; align-items:center;}
+      .container {padding:0.4em 0.22em;}
+    }
+    .metric-title::after,
+    .metric-card::after,
+    .metric-card:after,
+    .metric-title:after {
+      all: unset !important;
+      content: none !important;
+      display: none !important;
     }
   </style>
 </head>
@@ -137,8 +197,18 @@
     <div class="header">
       <h1><i class="fas fa-heartbeat"></i> SmartBreathing</h1>
       <p>Dashboard de Monitoreo Fisiológico</p>
+      <div style="margin-top: 8px; font-size: 1.13em; color: #444aaf; font-weight: 600;" id="welcome-box">
+        Bienvenido de nuevo
+      </div>
     </div>
-
+    <form class="manual-form" id="manualForm" autocomplete="off">
+      <label for="spo2-input">SpO₂ (%)</label>
+      <input type="number" id="spo2-input" name="spo2" min="50" max="100" step="0.1" required placeholder="%"/>
+      <label for="cintura-input">Cintura (cm)</label>
+      <input type="number" id="cintura-input" name="cintura" min="20" max="250" step="0.1" required placeholder="cm"/>
+      <button type="submit">Guardar datos</button>
+    </form>
+    <div id="msg-box"></div>
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-lungs"></i> Saturación de Oxígeno (SpO₂)</div>
@@ -148,147 +218,186 @@
         <span id="spo2-text">Normal</span>
       </div>
       <div class="metric-card">
-        <div class="metric-title"><i class="fas fa-cloud"></i> Nivel de CO₂</div>
+        <div class="metric-title"><i class="fas fa-cloud"></i> Nivel de CO₂ (ppm)</div>
         <div class="metric-value" id="co2-value">--</div>
-        <div class="metric-unit">ppm</div>
         <div class="status-indicator status-good" id="co2-status"></div>
         <span id="co2-text">Normal</span>
       </div>
       <div class="metric-card">
-        <div class="metric-title"><i class="fas fa-heart"></i> Frecuencia Cardíaca</div>
+        <div class="metric-title"><i class="fas fa-heart"></i> Frecuencia Cardíaca (bpm)</div>
         <div class="metric-value" id="hr-value">--</div>
-        <div class="metric-unit">bpm</div>
         <div class="status-indicator status-good" id="hr-status"></div>
         <span id="hr-text">Normal</span>
       </div>
       <div class="metric-card">
-        <div class="metric-title"><i class="fas fa-user-md"></i> Estado General</div>
-        <div class="metric-value" id="overall-status">--</div>
-        <div class="metric-unit">Estado</div>
-        <div class="status-indicator status-good" id="overall-indicator"></div>
-        <span id="overall-text">Monitoreando</span>
+        <div class="metric-title"><i class="fas fa-user-md"></i> % Grasa Corporal (YMCA)</div>
+        <div class="metric-value" id="grasa-value">--</div>
+        <div class="status-indicator status-good" id="grasa-status"></div>
+        <span id="grasa-text">---</span>
       </div>
     </div>
-
-    <div style="text-align:center;">
-      <button class="button-next" onclick="mostrarSiguiente()"><i class="fas fa-sync-alt"></i> Mostrar siguiente dato</button>
-    </div>
-
     <div class="chart-container">
       <div class="chart-title"><i class="fas fa-chart-line"></i> Tendencias en Tiempo Real</div>
       <canvas id="trendsChart" width="400" height="200"></canvas>
     </div>
-
-    <div class="chart-container">
-      <div class="chart-title"><i class="fas fa-dumbbell"></i> Rutina de Ejercicio Actual</div>
-      <div id="routine-info" class="loading">Cargando rutina...</div>
+    <div style="text-align:center;margin:2em 0 0.4em 0;color:#4162ea;font-size:1.1em;font-weight:600;">
+      Gestor de rutinas y recomendaciones disponible a través del Bot de Telegram.
     </div>
   </div>
-
   <script>
-    let datos = [];
-    let indiceActual = 0;
-
-    async function cargarDatos() {
-      const respuesta = await fetch('datos.json');
-      datos = await respuesta.json();
-      indiceActual = 0;
-      if (datos.length > 0) {
-        mostrarDato(datos[0]);
+    document.addEventListener("DOMContentLoaded", async function() {
+      const userId = localStorage.getItem('user_id');
+      const userName = localStorage.getItem('user_name');
+      if (!userId) {
+        window.location.href = "login.html";
+        return;
       }
-    }
-
-    function mostrarDato(dato) {
-      document.getElementById('spo2-value').textContent = dato.spo2.toFixed(1);
-      document.getElementById('co2-value').textContent = dato.co2.toFixed(0);
-      document.getElementById('hr-value').textContent = dato.hr.toFixed(0);
-
-      updateStatus('spo2', dato.spo2, 95, 100);
-      updateStatus('co2', dato.co2, 400, 600);
-      updateStatus('hr', dato.hr, 60, 100);
-
-      const now = new Date().toLocaleTimeString();
-      trendsChart.data.labels.push(now);
-      trendsChart.data.datasets[0].data.push(dato.spo2);
-      trendsChart.data.datasets[1].data.push(dato.co2);
-      trendsChart.data.datasets[2].data.push(dato.hr);
-
-      if (trendsChart.data.labels.length > 18) {
-        trendsChart.data.labels.shift();
-        trendsChart.data.datasets.forEach(ds => ds.data.shift());
+      document.getElementById('welcome-box').textContent = `Bienvenido de nuevo${userName ? ", " + userName : ""}`;
+      // El resto del JS debe inicializarse aquí también para asegurar que todo está listo
+      let peso = null;
+      async function obtenerPesoUsuario() {
+        try {
+          const res = await fetch("/api/users/by_id/" + userId);
+          if (res.ok) {
+            const user = await res.json();
+            peso = parseFloat(user.peso);
+          }
+        } catch (err) { peso = null; }
       }
-      trendsChart.update();
-    }
-
-    function mostrarSiguiente() {
-      if (datos.length === 0) return;
-      indiceActual++;
-      if (indiceActual >= datos.length) {
-        indiceActual = 0;
+      let datos = [];
+      let indiceActual = 0;
+      async function cargarDatos() {
+        try {
+          const response = await fetch('/api/mediciones?user_id=' + encodeURIComponent(userId));
+          if (!response.ok) throw new Error("Error al cargar datos");
+          datos = await response.json();
+          indiceActual = 0;
+          if (datos.length > 0) {
+            mostrarDato(datos[0]);
+          }
+        } catch (e) {
+          datos = [];
+          document.getElementById('spo2-value').textContent = '--';
+          document.getElementById('co2-value').textContent = '--';
+          document.getElementById('hr-value').textContent = '--';
+          document.getElementById('grasa-value').textContent = '--';
+        }
       }
-      mostrarDato(datos[indiceActual]);
-    }
-
-    const ctx = document.getElementById('trendsChart').getContext('2d');
-    const trendsChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'SpO₂ (%)',
-          data: [],
-          borderColor: '#37d682',
-          backgroundColor: 'rgba(56,226,141,0.08)',
-          tension: 0.4
-        }, {
-          label: 'CO₂ (ppm)',
-          data: [],
-          borderColor: '#FF9800',
-          backgroundColor: 'rgba(255,152,0,0.07)',
-          tension: 0.4
-        }, {
-          label: 'Frecuencia Cardíaca (bpm)',
-          data: [],
-          borderColor: '#5f6aea',
-          backgroundColor: 'rgba(66,86,245,0.08)',
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive:true,
-        scales: { y: { beginAtZero: false } },
-        plugins: { legend: { position: 'top' } }
+      function mostrarDato(dato) {
+        document.getElementById('spo2-value').textContent = dato.spo2?.toFixed(1) ?? '--';
+        document.getElementById('co2-value').textContent = dato.co2?.toFixed(0) ?? '--';
+        document.getElementById('hr-value').textContent = dato.hr?.toFixed(0) ?? '--';
+        document.getElementById('grasa-value').textContent = dato.grasa_porc?.toFixed(1) ?? '--';
+        updateStatus('spo2', dato.spo2, 95, 100);
+        updateStatus('co2', dato.co2, 400, 600);
+        updateStatus('hr', dato.hr, 60, 100);
+        if (dato.grasa_porc > 5 && dato.grasa_porc < 45) {
+          document.getElementById('grasa-status').className = 'status-indicator status-good';
+          document.getElementById('grasa-text').textContent = "Estimado saludable";
+        } else {
+          document.getElementById('grasa-status').className = 'status-indicator status-warning';
+          document.getElementById('grasa-text').textContent = "Fuera de rango típico";
+        }
+        const now = new Date().toLocaleTimeString();
+        trendsChart.data.labels.push(now);
+        trendsChart.data.datasets[0].data.push(dato.spo2);
+        trendsChart.data.datasets[1].data.push(dato.co2);
+        trendsChart.data.datasets[2].data.push(dato.hr);
+        if (trendsChart.data.labels.length > 18) {
+          trendsChart.data.labels.shift();
+          trendsChart.data.datasets.forEach(ds => ds.data.shift());
+        }
+        trendsChart.update();
       }
+      const ctx = document.getElementById('trendsChart').getContext('2d');
+      const trendsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'SpO₂ (%)',
+            data: [],
+            borderColor: '#37d682',
+            backgroundColor: 'rgba(56,226,141,0.08)',
+            tension: 0.4
+          }, {
+            label: 'CO₂ (ppm)',
+            data: [],
+            borderColor: '#FF9800',
+            backgroundColor: 'rgba(255,152,0,0.07)',
+            tension: 0.4
+          }, {
+            label: 'Frecuencia Cardíaca (bpm)',
+            data: [],
+            borderColor: '#5f6aea',
+            backgroundColor: 'rgba(66,86,245,0.08)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive:true,
+          scales: { y: { beginAtZero: false } },
+          plugins: { legend: { position: 'top' } }
+        }
+      });
+      function updateStatus(metric, value, min, max){
+        const s = document.getElementById(metric + '-status');
+        const t = document.getElementById(metric + '-text');
+        if(value >= min && value <= max){ s.className='status-indicator status-good'; t.textContent='Normal';}
+        else if(value < min * 0.9 || value > max * 1.1){ s.className='status-indicator status-danger'; t.textContent='Alerta';}
+        else{ s.className='status-indicator status-warning'; t.textContent='Atención';}
+      }
+      document.getElementById('manualForm').onsubmit = async function(e){
+        e.preventDefault();
+        const spo2 = parseFloat(document.getElementById('spo2-input').value);
+        const cintura = parseFloat(document.getElementById('cintura-input').value);
+        if (peso == null || isNaN(peso)) {
+          document.getElementById('msg-box').innerHTML = '<div class="error-message">Error: No se pudo cargar el peso del usuario.</div>';
+          return;
+        }
+        const grasa_porc = (0.23 * cintura) + (0.23 * peso) - 5.4;
+        const co2 = datos[0]?.co2 ?? 430;
+        const hr = datos[0]?.hr ?? 70;
+        const medicion = {
+          user_id: userId,
+          spo2: spo2,
+          grasa_porc: grasa_porc,
+          co2: co2,
+          hr: hr,
+          timestamp: new Date().toISOString()
+        };
+        try {
+          const res = await fetch('/api/sensors/reading', {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(medicion)
+          });
+          if (res.ok) {
+            document.getElementById('msg-box').innerHTML = '<div class="success-message">Datos guardados correctamente</div>';
+            cargarDatos();
+          } else {
+            document.getElementById('msg-box').innerHTML = '<div class="error-message">Error guardando los datos</div>';
+          }
+        } catch (err) {
+          document.getElementById('msg-box').innerHTML = '<div class="error-message">Error de conexión con el backend</div>';
+        }
+      };
+      await obtenerPesoUsuario();
+      cargarDatos();
     });
-
-    function updateStatus(metric, value, min, max){
-      const s = document.getElementById(metric + '-status');
-      const t = document.getElementById(metric + '-text');
-      if(value >= min && value <= max){ s.className='status-indicator status-good'; t.textContent='Normal';}
-      else if(value < min * 0.9 || value > max * 1.1){ s.className='status-indicator status-danger'; t.textContent='Alerta';}
-      else{ s.className='status-indicator status-warning'; t.textContent='Atención';}
-    }
-
-    async function loadCurrentRoutine(){
-      try{
-        const response = await fetch('/api/routine/current');
-        const routine = await response.json();
-        document.getElementById('routine-info').innerHTML = `
-          <h3>${routine.name}</h3>
-          <p><strong>Duración:</strong> ${routine.duration} minutos</p>
-          <p><strong>Intensidad:</strong> ${routine.intensity}</p>
-          <p><strong>Próximo ejercicio:</strong> ${routine.nextExercise}</p>
-        `;
-      } catch(e){
-        document.getElementById('routine-info').innerHTML = '<p>No hay rutina activa. Usa el bot de Telegram para crear una nueva rutina.</p>';
-      }
-    }
-
-    loadCurrentRoutine();
-    cargarDatos();
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 

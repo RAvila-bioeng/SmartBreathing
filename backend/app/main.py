@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime, timedelta
 import os
+from bson import ObjectId
 
 from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate
 from .db import get_database
@@ -25,16 +26,10 @@ backend_app_dir = os.path.dirname(main_py_path)
 project_root = os.path.dirname(os.path.dirname(backend_app_dir))
 frontend_dir = os.path.join(project_root, "frontend")
 
+# MONTA el directorio de tu frontend SOLO en "/static"
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 ai_engine = SmartBreathingAI()
-
-@app.get("/")
-async def serve_frontend():
-    index_path = os.path.join(frontend_dir, "index.html")
-    if not os.path.exists(index_path):
-        raise HTTPException(status_code=404, detail="index.html not found")
-    return FileResponse(index_path)
 
 @app.get("/health")
 def health_check() -> dict:
@@ -66,13 +61,11 @@ async def create_new_user(user: UserCreate):
     new_user_data = user.dict()
     new_user_data["created_at"] = datetime.utcnow()
     new_user_data["updated_at"] = datetime.utcnow()
-
     result = db.users.insert_one(new_user_data)
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="No se pudo crear el usuario.")
 
     return {"status": "success", "message": "Usuario creado correctamente", "user_id": str(result.inserted_id)}
-
 
 @app.get("/api/users/list")
 async def list_users():
@@ -81,6 +74,15 @@ async def list_users():
     for usuario in usuarios:
         usuario["_id"] = str(usuario["_id"])
     return usuarios
+
+@app.get("/api/users/by_id/{user_id}")
+async def get_user_by_id(user_id: str):
+    db = get_database()
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user["_id"] = str(user["_id"])
+    return user
 
 # Endpoints de datos de sensores
 @app.post("/api/sensors/reading", response_model=SensorReading)
@@ -167,6 +169,24 @@ async def get_user_recommendations(user_id: str, limit: int = 10):
         limit=limit
     ))
     return [AIRecommendation(**r) for r in recommendations]
+
+# ----------------- LOGIN -----------------
+@app.post("/api/check_user")
+async def check_user(datos: dict = Body(...)):
+    db = get_database()
+    nombre = datos.get("nombre", "").strip()
+    apellido = datos.get("apellido", "").strip()
+    codigo = datos.get("codigo", "").strip()
+    usuario = db.users.find_one({
+        "nombre": {"$regex": f"^{nombre}$", "$options": "i"},
+        "apellido": {"$regex": f"^{apellido}$", "$options": "i"},
+        "codigo": codigo
+    })
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no existente, regístrese")
+    return {"user_id": str(usuario["_id"])}
+
+
 
 
 
