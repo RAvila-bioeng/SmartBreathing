@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
-from datetime import datetime, timedelta
+from typing import List
+from datetime import datetime
 import os
 from bson import ObjectId
 
@@ -26,44 +26,41 @@ backend_app_dir = os.path.dirname(main_py_path)
 project_root = os.path.dirname(os.path.dirname(backend_app_dir))
 frontend_dir = os.path.join(project_root, "frontend")
 
-# MONTA el directorio de tu frontend SOLO en "/static"
+# SIRVE ARCHIVOS ESTÁTICOS (CSS, JS, imágenes...) DESDE /static
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
-# Ruta raíz para servir menu.html (página principal con opciones)
+# RUTAS PARA CADA HTML DEL FRONTEND
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     with open(os.path.join(frontend_dir, "menu.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Ruta para servir menu.html
 @app.get("/menu.html", response_class=HTMLResponse)
 async def read_menu():
     with open(os.path.join(frontend_dir, "menu.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Ruta para servir login.html
 @app.get("/login.html", response_class=HTMLResponse)
 async def read_login():
     with open(os.path.join(frontend_dir, "login.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Ruta para servir index.html (dashboard - requiere login)
 @app.get("/index.html", response_class=HTMLResponse)
 async def read_index():
     with open(os.path.join(frontend_dir, "index.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Ruta para servir nuevo_usuario_paso1.html
 @app.get("/nuevo_usuario_paso1.html", response_class=HTMLResponse)
 async def read_nuevo_usuario_paso1():
     with open(os.path.join(frontend_dir, "nuevo_usuario_paso1.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Ruta para servir nuevo_usuario_paso2.html
 @app.get("/nuevo_usuario_paso2.html", response_class=HTMLResponse)
 async def read_nuevo_usuario_paso2():
     with open(os.path.join(frontend_dir, "nuevo_usuario_paso2.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+# ========== Resto de tu API tal y como la tienes ==========
 
 ai_engine = SmartBreathingAI()
 
@@ -71,7 +68,7 @@ ai_engine = SmartBreathingAI()
 def health_check() -> dict:
     return {"status": "ok"}
 
-# Endpoints de usuarios
+# --- USERS ---
 @app.post("/api/users/", response_model=UserProfile)
 async def create_user(user: UserProfile):
     db = get_database()
@@ -85,7 +82,8 @@ async def get_user_by_telegram(telegram_id: int):
     user_data = db.users.find_one({"telegram_id": telegram_id})
     if not user_data:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return UserProfile(**user_data)
+    user_data["_id"] = str(user_data["_id"])
+    return user_data
 
 @app.post("/api/users/create")
 async def create_new_user(user: UserCreate):
@@ -93,14 +91,13 @@ async def create_new_user(user: UserCreate):
     existing_user = db.users.find_one({"codigo": user.codigo})
     if existing_user:
         raise HTTPException(status_code=400, detail="El código de usuario ya existe.")
-
     new_user_data = user.dict()
+    new_user_data.pop("peso", None)
     new_user_data["created_at"] = datetime.utcnow()
     new_user_data["updated_at"] = datetime.utcnow()
     result = db.users.insert_one(new_user_data)
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="No se pudo crear el usuario.")
-
     return {"status": "success", "message": "Usuario creado correctamente", "user_id": str(result.inserted_id)}
 
 @app.get("/api/users/list")
@@ -123,7 +120,7 @@ async def get_user_by_id(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener usuario: {str(e)}")
 
-# Endpoints de datos de sensores
+# --- SENSORS ---
 @app.post("/api/sensors/reading", response_model=SensorReading)
 async def create_sensor_reading(reading: SensorReading):
     db = get_database()
@@ -155,7 +152,6 @@ async def get_user_readings(user_id: str, limit: int = 50):
 
 @app.get("/api/mediciones")
 async def get_mediciones(user_id: str, limit: int = 50):
-    """Endpoint para obtener mediciones del usuario (compatible con frontend)"""
     try:
         db = get_database()
         readings = list(db.sensor_readings.find(
@@ -163,7 +159,6 @@ async def get_mediciones(user_id: str, limit: int = 50):
             sort=[("timestamp", -1)],
             limit=limit
         ))
-        # Convertir a formato que espera el frontend
         mediciones = []
         for r in readings:
             medicion = {
@@ -175,10 +170,86 @@ async def get_mediciones(user_id: str, limit: int = 50):
             }
             mediciones.append(medicion)
         return mediciones
-    except Exception as e:
-        # Si hay error (por ejemplo, MongoDB no disponible), devolver lista vacía
-        # para que el frontend pueda cargar aunque no haya datos
+    except Exception:
         return []
+
+# --- MEDICIONES: ObjectId + LOGS ---
+@app.post("/api/Mediciones")
+async def create_or_update_medicion(request: Request):
+    db = get_database()
+    data = await request.json()
+
+    idUsuario = data.get("idUsuario")
+    nuevos_valores = data.get("valores", {})
+    fecha = data.get("fecha", datetime.utcnow().isoformat())
+    quien_realizo = data.get("quien_realizo", idUsuario)
+
+    if not idUsuario or not isinstance(nuevos_valores, dict):
+        raise HTTPException(status_code=400, detail="Faltan campos obligatorios (idUsuario, valores diccionario)")
+
+    try:
+        obj_idUsuario = ObjectId(idUsuario)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato de idUsuario incorrecto")
+
+    existing = db.Mediciones.find_one({"idUsuario": obj_idUsuario})
+
+    if existing:
+        dict_actual = existing.get("valores", {})
+
+        # LOGS DE DEPURACIÓN
+        print(">>> BACKEND - idUsuario:", obj_idUsuario)
+        print(">>> BACKEND - valores que había antes:", dict_actual)
+        print(">>> BACKEND - valores que llegan en el POST:", nuevos_valores)
+
+        dict_actual.update(nuevos_valores)
+
+        print(">>> BACKEND - valores que se van a guardar:", dict_actual)
+
+        db.Mediciones.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {"valores": dict_actual, "fecha": fecha, "quien_realizo": quien_realizo}}
+        )
+        resultado = db.Mediciones.find_one({"_id": existing["_id"]})
+        resultado["_id"] = str(resultado["_id"])
+        if "idUsuario" in resultado:
+            resultado["idUsuario"] = str(resultado["idUsuario"])
+        if "quien_realizo" in resultado and isinstance(resultado["quien_realizo"], ObjectId):
+            resultado["quien_realizo"] = str(resultado["quien_realizo"])
+        return resultado
+    else:
+        medicion = {
+            "idUsuario": obj_idUsuario,
+            "valores": nuevos_valores,
+            "fecha": fecha,
+            "quien_realizo": obj_idUsuario
+        }
+        result = db.Mediciones.insert_one(medicion)
+        medicion["_id"] = str(result.inserted_id)
+        medicion["idUsuario"] = str(medicion["idUsuario"])
+        if isinstance(medicion.get("quien_realizo"), ObjectId):
+            medicion["quien_realizo"] = str(medicion["quien_realizo"])
+        return medicion
+
+@app.get("/api/Mediciones")
+async def get_all_mediciones(user_id: str, limit: int = 100):
+    db = get_database()
+    try:
+        obj_user_id = ObjectId(user_id)
+    except Exception:
+        return []
+    mediciones = list(db.Mediciones.find(
+        {"idUsuario": obj_user_id},
+        sort=[("fecha", -1)],
+        limit=limit
+    ))
+    for m in mediciones:
+        m["_id"] = str(m["_id"])
+        if "idUsuario" in m:
+            m["idUsuario"] = str(m["idUsuario"])
+        if "quien_realizo" in m and isinstance(m["quien_realizo"], ObjectId):
+            m["quien_realizo"] = str(m["quien_realizo"])
+    return mediciones
 
 @app.post("/api/routines/", response_model=WorkoutRoutine)
 async def create_routine(routine: WorkoutRoutine):
@@ -214,11 +285,19 @@ async def get_user_analysis(user_id: str):
 async def generate_ai_routine(user_id: str, goals: List[str] = None):
     try:
         db = get_database()
-        user_data = db.users.find_one({"_id": user_id})
+        # IMPORTANTE: si user_id es un _id de Mongo, conviértelo a ObjectId
+        try:
+            obj_user_id = ObjectId(user_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="user_id inválido")
+
+        user_data = db.users.find_one({"_id": obj_user_id})
         if not user_data:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
         user_profile = UserProfile(**user_data)
         goals = goals or ["general_fitness"]
+
         routine = ai_engine.create_personalized_routine(user_profile, goals)
         result = db.routines.insert_one(routine.dict(by_alias=True))
         routine.id = result.inserted_id
@@ -251,6 +330,15 @@ async def check_user(datos: dict = Body(...)):
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no existente, regístrese")
     return {"user_id": str(usuario["_id"])}
+
+
+
+
+
+
+
+
+
 
 
 

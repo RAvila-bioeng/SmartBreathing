@@ -1,9 +1,8 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from bson import ObjectId
 from pydantic_core import core_schema
-from typing import Any
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -118,4 +117,18 @@ class AIRecommendation(BaseModel):
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
+# NUEVO MODELO PARA "Mediciones"
+class Medicion(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    idUsuario: str
+    valores: Dict[str, Any]  # Diccionario tipo {"peso":67, "spo2":99, "grasa_porc":14, ...}
+    fecha: datetime = Field(default_factory=datetime.utcnow)
+    quien_realizo: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 

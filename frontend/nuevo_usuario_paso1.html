@@ -6,10 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
-    /* Usamos box-sizing en todos los elementos para un mejor manejo de paddings/borders */
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       min-height:100vh;
@@ -151,7 +148,6 @@
       <i class="fas fa-id-card-alt icono-campo"></i>
       Datos del perfil
     </h1>
-    <!-- La función irAPersonalizacion se ejecuta al enviar el formulario -->
     <form class="user-form" onsubmit="irAPersonalizacion(event)">
       <label for="nombre"><i class="fas fa-user icono-campo"></i>Nombre</label>
       <input class="user-input" type="text" id="nombre" required>
@@ -175,80 +171,56 @@
   </div>
   <div id="toast" class="toast"></div>
   <script>
-    // Muestra una notificación temporal (reemplaza alert() para mejor UX)
     function showToast(msg, color="#684CB2") {
       let t = document.getElementById("toast");
       t.textContent = msg;
       t.style.background = color;
       t.className = "toast show";
-      // Oculta el toast después de 2 segundos
       setTimeout(() => t.className = "toast", 2000);
     }
-
-    /**
-     * Valida que el primer carácter de la cadena (después de espacios iniciales) sea una letra mayúscula.
-     * Esta es la forma más robusta y simple de validar la capitalización en JavaScript.
-     */
     function validaCapital(palabra) {
-      // Si está vacío, no es válido
       const trimmed = palabra.trim();
       if (trimmed.length === 0) return false;
-      
-      // Obtiene el primer carácter
       const primer = trimmed[0];
-      
-      // Comprueba que el primer carácter es una letra mayúscula
-      // La comparación debe devolver true (es igual a su mayúscula) y false (no es igual a su minúscula)
-      // Esto filtra números y símbolos
       return (primer === primer.toUpperCase() && primer !== primer.toLowerCase());
     }
-
-    // Función principal que se ejecuta al enviar el formulario
     function irAPersonalizacion(event) {
-      event.preventDefault(); // Previene el envío por defecto del formulario
-
+      event.preventDefault();
       const nombre = document.getElementById('nombre').value.trim();
       const apellido = document.getElementById('apellido').value.trim();
       const codigo = document.getElementById('codigo').value.trim();
       const condiciones = document.getElementById('condiciones').value;
       const edad = document.getElementById('edad').value;
       const peso = document.getElementById('peso').value;
-
-      // 1. Validación de campos vacíos
       if (!nombre || !apellido || !codigo || !condiciones || !edad || !peso) {
         showToast("Por favor, rellena todos los campos.", "#e13333");
-        return; // Detiene el proceso
+        return;
       }
-
-      // 2. Validación de Capitalización para Nombre (¡El bloqueo está aquí!)
       if (!validaCapital(nombre)) {
         showToast("El nombre debe empezar obligatoriamente con una letra mayúscula. Ejemplo: Juan", "#e13333");
-        return; // Detiene el proceso
+        return;
       }
-
-      // 3. Validación de Capitalización para Apellido (¡El bloqueo está aquí!)
       if (!validaCapital(apellido)) {
         showToast("El apellido debe empezar obligatoriamente con una letra mayúscula. Ejemplo: García", "#e13333");
-        return; // Detiene el proceso
+        return;
       }
-      
-      // Si todo es correcto:
+      // Solo los campos del usuario (sin peso)
       const datos = {
         nombre,
         apellido,
         codigo,
         condiciones_limitantes: condiciones,
-        edad,
-        peso
+        edad
       };
-
-      // Guarda los datos y redirige a la página solicitada (nuevo_usuario2.html)
+      // El peso SOLO se guarda como variable temporal para usar después
+      localStorage.setItem('pesoUsuarioTemp', peso);
       localStorage.setItem('datosPerfilUsuario', JSON.stringify(datos));
       window.location.href = "nuevo_usuario_paso2.html"; 
     }
   </script>
 </body>
 </html>
+
 
 
 

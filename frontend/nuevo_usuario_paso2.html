@@ -6,134 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <style>
-    body {
-      font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-      min-height:100vh;
-      margin:0;
-      background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
-      background-size: 200% 200%;
-      animation: gradientMove 12s ease-in-out infinite;
-      box-sizing:border-box;
-    }
-    @keyframes gradientMove {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-    @keyframes fadeInUp {
-      0% {opacity:0; transform:translateY(36px);}
-      100% {opacity:1; transform:translateY(0);}
-    }
-    .form-container {
-      max-width:440px;
-      background:white;
-      border-radius:24px;
-      padding:2.7em 2em 2em 2em;
-      box-shadow:0 10px 40px rgba(70,82,210,0.14), 0 1.5px 3px rgba(70,82,210,0.03);
-      margin:56px auto 0 auto;
-      text-align:center;
-      position:relative;
-      animation: fadeInUp 0.88s cubic-bezier(.43,.06,.58,1.02);
-    }
-    .stepper { display:flex; align-items:center; justify-content:center; margin-bottom:14px; padding-top:4px;}
-    .step {
-      width: 36px; height: 36px; border-radius: 50%; background: #bb9cf5;
-      color: #fff; font-weight:700; font-size:1.23em; display:flex; align-items:center; justify-content:center;
-      margin:0 8px; transition:background 0.3s;
-      opacity:0.93;
-    }
-    .step.active { background: #7678ed; color:#fff; opacity:1; font-size:1.3em; box-shadow: 0 2px 12px #7654e259;}
-    .bar {height: 5px; width:32px; background: #c8b6e2; border-radius:2px;}
-    .form-container h1 {
-      font-size:2.18rem;
-      color:#667eea;
-      margin-bottom:19px;
-      font-weight:800;
-      letter-spacing: 0.4px;
-      display:flex; align-items:center; justify-content:center; gap:0.6em;
-    }
-    .user-form label {
-      display:block;
-      margin:13px 0 6px 0;
-      font-size:1.09rem;
-      color:#496;
-      opacity:0.93;
-      text-align:left;
-      font-weight:600;
-      letter-spacing:0.05em;
-    }
-    .user-input {
-      width:98%;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #c0c3ff;
-      font-size:1.13rem;
-      margin-bottom:8px;
-      background:#f6f8ff;
-      transition:border 0.21s;
-      box-shadow: 0 1.5px 9px rgba(90,90,200,0.06);
-    }
-    .user-input:focus {
-      border:1.5px solid #667eea;
-      outline: none;
-      background:#eef2ff;
-    }
-    .btn-user {
-      display:block;
-      width:100%;
-      margin:24px 0 0 0;
-      padding:16px;
-      font-size:1.18rem;
-      font-weight:700;
-      border-radius:28px;
-      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white;
-      border:none;
-      cursor:pointer;
-      box-shadow:0 2px 12px #7865e40c;
-      transition:box-shadow 0.23s, transform 0.23s, background 0.29s;
-    }
-    .btn-user:hover {
-      box-shadow:0 8px 32px #7865e43f;
-      background:linear-gradient(122deg, #8463e4 0%, #666eaac6 100%);
-      transform:translateY(-2px);
-    }
-    .mensaje {
-      margin-top:20px;
-      font-size:1.10rem;
-      font-weight:600;
-      color: #F44336;
-      min-height:1.3em;
-    }
-    .icono-campo {
-      margin-right:8px;
-      color:#8a6be8;
-      font-size:1.09em;
-    }
-    .toast {
-      visibility: hidden;
-      min-width: 220px;
-      color: white;
-      background: #684CB2;
-      text-align: center;
-      border-radius: 6px;
-      padding: 1.2em;
-      position: fixed;
-      z-index: 100;
-      left: 50%; bottom: 18px;
-      transform: translateX(-50%);
-      transition: opacity 0.4s;
-      opacity: 0;
-    }
-    .toast.show {
-      visibility: visible;
-      opacity: 1;
-    }
-    @media (max-width:600px) {
-      .form-container { padding:1.1em 0.6em 1.4em 0.6em; max-width:97vw; }
-      .step {width:26px;height:26px;font-size:0.96em;}
-      h1 {font-size:1.3em;}
-    }
+    body { font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif; min-height:100vh; margin:0; background: linear-gradient(120deg, #667eea 0%, #764ba2 100%); background-size: 200% 200%; animation: gradientMove 12s ease-in-out infinite; box-sizing:border-box; }
+    @keyframes gradientMove { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;}}
+    @keyframes fadeInUp { 0% {opacity:0; transform:translateY(36px);} 100% {opacity:1; transform:translateY(0);}}
+    .form-container { max-width:440px; background:white; border-radius:24px; padding:2.7em 2em 2em 2em; box-shadow:0 10px 40px rgba(70,82,210,0.14), 0 1.5px 3px rgba(70,82,210,0.03); margin:56px auto 0 auto; text-align:center; position:relative; animation: fadeInUp 0.88s cubic-bezier(.43,.06,.58,1.02);}
+    .stepper { display:flex; align-items:center; justify-content:center; margin-bottom:18px; padding-top:10px;}
+    .step { width: 32px; height: 32px; border-radius: 50%; background: #bb9cf5; color: #fff; font-weight:700; font-size:1.13em; display:flex; align-items:center; justify-content:center; margin:0 8px; transition:background 0.3s; opacity:0.95;}
+    .step.active { background: #7678ed; color:#fff; opacity:1;}
+    .bar {height: 5px; width:30px; background: #c8b6e2; border-radius:2px;}
+    .form-container h1 { font-size:2.15rem; color:#667eea; margin-bottom:13px; font-weight:800; letter-spacing: 0.4px; display:flex; align-items:center; justify-content:center; gap:0.6em;}
+    .user-form label { display:block; margin:14px 0 6px 0; font-size:1.09rem; color:#496; opacity:0.93; text-align:left; font-weight:600; letter-spacing:0.05em;}
+    .user-input { width:98%; padding:12px; border-radius:10px; border:1px solid #c0c3ff; font-size:1.15rem; margin-bottom:8px; background:#f6f8ff; transition:border 0.21s; box-shadow: 0 1.5px 9px rgba(90,90,200,0.06);}
+    .user-input:focus { border:1.5px solid #667eea; outline: none; background:#eef2ff;}
+    .btn-user { display:block; width:100%; margin:24px 0 0 0; padding:16px; font-size:1.18rem; font-weight:700; border-radius:28px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; cursor:pointer; box-shadow:0 2px 12px #7865e40c; transition:box-shadow 0.23s, transform 0.23s, background 0.29s;}
+    .btn-user:hover { box-shadow:0 8px 32px #7865e43f; background:linear-gradient(122deg, #8463e4 0%, #666eaac6 100%); transform:translateY(-2px);}
+    .mensaje { margin-top:22px; font-size:1.10rem; font-weight:600; color: #F44336; min-height:1.2em;}
+    .icono-campo { margin-right:8px; color:#8a6be8; font-size:1.05em;}
+    .toast { visibility: hidden; min-width: 220px; color: white; background: #684CB2; text-align: center; border-radius: 6px; padding: 1.2em; position: fixed; z-index: 100; left: 50%; bottom: 18px; transform: translateX(-50%); transition: opacity 0.4s; opacity: 0;}
+    .toast.show { visibility: visible; opacity: 1;}
+    @media (max-width:600px) { .form-container { padding:1.1em 0.6em 1.4em 0.6em; max-width:97vw; } .step {width:24px;height:24px;font-size:0.96em;} h1 {font-size:1.3em;}}
   </style>
 </head>
 <body>
@@ -182,9 +73,12 @@
       <label><i class="fas fa-calendar-alt icono-campo"></i>Frecuencia de entrenamiento (días/semana):
         <select class="user-input" id="frecuencia" required>
           <option value="">Selecciona</option>
-          <option value="1">1</option><option value="2">2</option>
-          <option value="3">3</option><option value="4">4</option>
-          <option value="5">5</option><option value="6">6</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
           <option value="7">7</option>
         </select>
       </label>
@@ -211,9 +105,7 @@
     </form>
     <div class="mensaje" id="mensaje-usuario"></div>
   </div>
-  
   <div id="toast" class="toast"></div>
-  
   <script>
     function showToast(msg, color="#684CB2") {
       let t = document.getElementById("toast");
@@ -230,14 +122,20 @@
         return;
       }
       const paso1 = JSON.parse(localStorage.getItem('datosPerfilUsuario') || "{}");
+      const peso = parseFloat(localStorage.getItem('pesoUsuarioTemp'));
       const userData = {
-        ...paso1,
+        nombre: paso1.nombre,
+        apellido: paso1.apellido,
+        codigo: paso1.codigo,
+        condiciones_limitantes: paso1.condiciones_limitantes,
+        edad: parseInt(paso1.edad || "0", 10),
+        peso: peso,
         sport_preference: document.getElementById('deporte').value,
         fitness_level: document.getElementById('fitness_level').value,
         objetivo_deportivo: document.getElementById('objetivo').value,
         grado_exigencia: document.getElementById('grado_exigencia').value,
         frecuencia_entrenamiento: parseInt(document.getElementById('frecuencia').value, 10),
-        tiempo_dedicable_diario: document.getElementById('tiempo_dedicable').value,
+        tiempo_dedicable_diario: parseInt(document.getElementById('tiempo_dedicable').value, 10),
         equipamiento: document.getElementById('equipamiento').value,
         sistema_recompensas: sistemaRecompensas
       };
@@ -248,21 +146,47 @@
           body: JSON.stringify(userData)
         });
         const result = await response.json();
-        if (response.ok) {
+        if (response.ok && result.user_id) {
+          // Guardar el peso en Mediciones usando el nuevo formato
+          if (peso && !isNaN(peso)) {
+            const medicion = {
+              idUsuario: result.user_id,
+              valores: { peso: peso },
+              fecha: new Date().toISOString(),
+              quien_realizo: result.user_id
+            };
+            const resMed = await fetch('http://localhost:8000/api/Mediciones', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(medicion)
+            });
+            if (!resMed.ok) {
+              showToast("Usuario creado pero error guardando el peso", "#e13333");
+              console.error(await resMed.text());
+              return;
+            }
+          }
           showToast("Usuario creado correctamente", "#4CAF50");
-          setTimeout(() => {
-            window.location.href = "menu.html";
-          }, 1100);
+          setTimeout(() => window.location.href = "menu.html", 1100);
         } else {
           showToast("Error: " + (result.detail || "No se pudo crear el usuario."), "#e13333");
+          console.error(result);
         }
       } catch (error) {
         showToast("Error de conexión. Inténtalo de nuevo.", "#e13333");
+        console.error(error);
       }
     }
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 
