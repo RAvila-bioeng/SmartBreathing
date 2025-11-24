@@ -123,11 +123,13 @@
       }
       const paso1 = JSON.parse(localStorage.getItem('datosPerfilUsuario') || "{}");
       const peso = parseFloat(localStorage.getItem('pesoUsuarioTemp'));
+      // Añadimos 'genero' del paso 1 recogido en localStorage al userData
       const userData = {
         nombre: paso1.nombre,
         apellido: paso1.apellido,
         codigo: paso1.codigo,
         condiciones_limitantes: paso1.condiciones_limitantes,
+        genero: paso1.genero, // <------ CAMPO AÑADIDO
         edad: parseInt(paso1.edad || "0", 10),
         peso: peso,
         sport_preference: document.getElementById('deporte').value,
@@ -155,7 +157,7 @@
               fecha: new Date().toISOString(),
               quien_realizo: result.user_id
             };
-            const resMed = await fetch('http://localhost:8000/api/Mediciones', {
+            const resMed = await fetch('http://localhost:8000/api/mediciones', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify(medicion)
@@ -180,6 +182,7 @@
   </script>
 </body>
 </html>
+
 
 
 

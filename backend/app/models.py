@@ -23,16 +23,24 @@ class PyObjectId(ObjectId):
 
 class UserProfile(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    telegram_id: int
-    name: str
-    age: int
-    weight: float
-    gender: str  # "male", "female", "other"
-    sport_preference: str
-    fitness_level: str  # "beginner", "intermediate", "advanced"
+    telegram_id: Optional[int] = None
+    name: Optional[str] = None
+    apellido: Optional[str] = None
+    codigo: Optional[str] = None
+    condiciones_limitantes: Optional[str] = None
+    genero: Optional[str] = None # <-- Añadido aquí
+    edad: Optional[int] = None
+    weight: Optional[float] = None
+    sport_preference: Optional[str] = None
+    fitness_level: Optional[str] = None
+    objetivo_deportivo: Optional[str] = None
+    grado_exigencia: Optional[str] = None
+    frecuencia_entrenamiento: Optional[int] = None
+    tiempo_dedicable_diario: Optional[int] = None
+    equipamiento: Optional[str] = None
+    sistema_recompensas: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -43,6 +51,7 @@ class UserCreate(BaseModel):
     apellido: str
     codigo: str
     condiciones_limitantes: str
+    genero: str                   # <-- Obligatorio y string
     edad: int
     peso: float
     sport_preference: str
@@ -52,19 +61,18 @@ class UserCreate(BaseModel):
     frecuencia_entrenamiento: int
     tiempo_dedicable_diario: int
     equipamiento: str
-    sistema_recompensas: str  # <-- campo añadido
+    sistema_recompensas: str
 
 class SensorReading(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    spo2: float  # Saturación de oxígeno (%)
-    co2: float   # Nivel de CO2 (ppm)
-    heart_rate: int  # Frecuencia cardíaca (bpm)
-    ecg_data: Optional[List[float]] = None  # Datos de ECG si disponibles
-    temperature: Optional[float] = None  # Temperatura corporal (°C)
-    respiratory_rate: Optional[float] = None  # Frecuencia respiratoria (rpm)
-
+    spo2: float
+    co2: float
+    heart_rate: int
+    ecg_data: Optional[List[float]] = None
+    temperature: Optional[float] = None
+    respiratory_rate: Optional[float] = None
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -75,12 +83,11 @@ class Exercise(BaseModel):
     name: str
     description: str
     duration_minutes: int
-    intensity: str  # "low", "moderate", "high"
-    category: str  # "cardio", "strength", "flexibility", "breathing"
+    intensity: str
+    category: str
     target_muscles: List[str]
     instructions: List[str]
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -91,13 +98,12 @@ class WorkoutRoutine(BaseModel):
     user_id: PyObjectId
     name: str
     description: str
-    exercises: List[dict]  # Lista de ejercicios con duración y orden
-    total_duration: int  # Duración total en minutos
-    difficulty: str  # "beginner", "intermediate", "advanced"
-    target_goals: List[str]  # ["weight_loss", "muscle_gain", "endurance", etc.]
+    exercises: List[dict]
+    total_duration: int
+    difficulty: str
+    target_goals: List[str]
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
-
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -106,29 +112,27 @@ class WorkoutRoutine(BaseModel):
 class AIRecommendation(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId
-    recommendation_type: str  # "exercise", "rest", "intensity_adjustment", "warning"
+    recommendation_type: str
     message: str
-    confidence_score: float  # 0.0 to 1.0
-    based_on_metrics: dict  # Qué métricas se usaron para la recomendación
+    confidence_score: float
+    based_on_metrics: dict
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_applied: bool = False
-
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-# NUEVO MODELO PARA "Mediciones"
 class Medicion(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     idUsuario: str
-    valores: Dict[str, Any]  # Diccionario tipo {"peso":67, "spo2":99, "grasa_porc":14, ...}
+    valores: Dict[str, Any]
     fecha: datetime = Field(default_factory=datetime.utcnow)
     quien_realizo: Optional[str] = None
-
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
 
 

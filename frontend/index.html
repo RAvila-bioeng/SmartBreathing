@@ -13,10 +13,12 @@
     .header { text-align: center; margin-bottom: 24px; }
     .header h1 { color: #6066dc; font-weight: 900; font-size: 2.16em; margin-bottom: 5px; margin-top: 5px; letter-spacing: .01em; }
     .header p { color: #474b6a; font-weight: 600; letter-spacing: .01em; margin-bottom: 8px; margin-top: 0; font-size: 1.19em; }
-    .manual-form { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; align-items: center; margin-bottom: 38px; margin-top: 20px; font-size: 1.09em; background: #f9fafe; padding: 18px 26px 16px 26px; border-radius: 17px; box-shadow: 0 2px 15px #e5e7fe11;}
-    .manual-form label { font-weight: 700; letter-spacing: .01em; margin-right: 7px; color: #434894; }
-    .manual-form input[type="number"] { padding: 7px 14px; font-size: 1.13em; border-radius: 10px; border: 1.2px solid #bbc6f8; outline: none; max-width: 95px; text-align: right; background: #f5f6fa; }
-    .manual-form button { padding: 12px 22px; font-size: 1.18em; border-radius: 14px; border: none; font-weight: bold; color: white; background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%); cursor: pointer; }
+    .manual-form { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; margin-bottom: 38px; margin-top: 20px; font-size: 1.09em; background: #f9fafe; padding: 18px 18px 16px 18px; border-radius: 17px; box-shadow: 0 2px 15px #e5e7fe11;}
+    .manual-form label { font-weight: 700; letter-spacing: .01em; color: #434894; margin:0 4px 0 0;}
+    .manual-form input[type="number"] { padding: 7px 9px; font-size: 1.13em; border-radius: 10px; border: 1.2px solid #bbc6f8; outline: none; max-width: 80px; min-width:60px; text-align:right; background: #f5f6fa; margin-right:14px;}
+    .manual-form .co2-row { display: flex; flex-wrap: wrap; align-items: center; gap:8px; width:100%; justify-content: center;margin-top:8px;}
+    .manual-form .co2-row label { margin-right:3px; }
+    .manual-form button { padding: 12px 22px; font-size: 1.18em; border-radius: 14px; border: none; font-weight: bold; color: white; background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%); cursor: pointer; margin-left:10px;}
     .manual-form button:hover { background: linear-gradient(102deg, #764ba2 0%, #667eea 100%);}
     .success-message { color:#20bb4f; font-weight:700; text-align:center; margin-bottom:1.3em; font-size:1.16em; }
     .error-message { color:#f44336; font-weight:700; text-align:center; margin-bottom:1.3em; }
@@ -29,11 +31,14 @@
     .status-good {background: #7af77a; border-color: #48e248;}
     .status-warning {background: #FFEA6C; border-color:#f7ca33;}
     .status-danger {background: #f77070; border-color: #e94c4c;}
+    .metric-co2-all { display:flex; flex-direction:column; align-items:center; }
+    .co2-values-row { display:flex; flex-direction:row; justify-content:center; gap:22px;margin-top:10px;}
+    .co2-value-box { font-size: 1.22em; font-weight:700;  background: #ecf1ff; border-radius:9px; box-shadow:0 1.5px 7px #9bb0e42a;margin:0 3px; min-width:81px; padding:7px 11px; color:#444aaf;}
+    .co2-value-label { font-size: 0.98em; color:#6078e0; font-weight:600;}
     .chart-container { background: #fff; border-radius: 17px; box-shadow: 0 1px 13px #bbbcea10; padding: 19px 22px; margin-bottom: 28px; margin-top: 28px; max-width: 850px; margin-left: auto; margin-right: auto;}
     .chart-title { font-size:1.14em; font-weight: bold; color:#6066dc; letter-spacing:.01em; margin-bottom: 10px; margin-top: 0; display:flex; align-items:center; gap:7px; }
-    @media (max-width: 1000px){ .container {max-width:99vw; padding:1.6em 0.5em;} .chart-container {padding:5px 1em;} .metrics-grid {gap: 9px;} .metric-card {min-width:140px; font-size:0.98em;} }
-    @media (max-width: 650px) { .metrics-grid {flex-direction:column; align-items:center;} .container {padding:0.4em 0.22em;} }
-    .metric-title::after, .metric-card::after, .metric-card:after, .metric-title:after { all: unset !important; content: none !important; display: none !important; }
+    @media (max-width: 1150px){ .metrics-grid{gap:13px;} .co2-values-row{gap:7px;} .metric-card{min-width:120px;font-size:0.92em;} .co2-value-box{min-width:65px;} }
+    @media (max-width: 650px) { .metrics-grid {flex-direction:column; align-items:center;} .container {padding:0.4em 0.22em;} .co2-values-row{ flex-wrap:wrap;gap:8px;} }
   </style>
 </head>
 <body>
@@ -50,7 +55,19 @@
       <input type="number" id="spo2-input" name="spo2" min="50" max="100" step="0.1" required placeholder="%"/>
       <label for="cintura-input">Cintura (cm)</label>
       <input type="number" id="cintura-input" name="cintura" min="20" max="250" step="0.1" required placeholder="cm"/>
-      <button type="submit">Guardar datos</button>
+      <div class="co2-row">
+        <label for="co2-1-input">CO₂ 1</label>
+        <input type="number" id="co2-1-input" name="co2_1" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+        <label for="co2-2-input">CO₂ 2</label>
+        <input type="number" id="co2-2-input" name="co2_2" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+        <label for="co2-3-input">CO₂ 3</label>
+        <input type="number" id="co2-3-input" name="co2_3" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+        <label for="co2-4-input">CO₂ 4</label>
+        <input type="number" id="co2-4-input" name="co2_4" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+        <label for="co2-5-input">CO₂ 5</label>
+        <input type="number" id="co2-5-input" name="co2_5" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+        <button type="submit">Guardar datos</button>
+      </div>
     </form>
     <div id="msg-box"></div>
     <div class="metrics-grid">
@@ -61,11 +78,30 @@
         <div class="status-indicator status-good" id="spo2-status"></div>
         <span id="spo2-text">Normal</span>
       </div>
-      <div class="metric-card">
-        <div class="metric-title"><i class="fas fa-cloud"></i> Nivel de CO₂ (ppm)</div>
-        <div class="metric-value" id="co2-value">--</div>
-        <div class="status-indicator status-good" id="co2-status"></div>
-        <span id="co2-text">Normal</span>
+      <div class="metric-card metric-co2-all">
+        <div class="metric-title">CO₂ (ppm) <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">(últimas lecturas)</span></div>
+        <div class="co2-values-row">
+          <div>
+            <div class="co2-value-label">1</div>
+            <div class="co2-value-box" id="co2-1-value">--</div>
+          </div>
+          <div>
+            <div class="co2-value-label">2</div>
+            <div class="co2-value-box" id="co2-2-value">--</div>
+          </div>
+          <div>
+            <div class="co2-value-label">3</div>
+            <div class="co2-value-box" id="co2-3-value">--</div>
+          </div>
+          <div>
+            <div class="co2-value-label">4</div>
+            <div class="co2-value-box" id="co2-4-value">--</div>
+          </div>
+          <div>
+            <div class="co2-value-label">5</div>
+            <div class="co2-value-box" id="co2-5-value">--</div>
+          </div>
+        </div>
       </div>
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-heart"></i> Frecuencia Cardíaca (bpm)</div>
@@ -89,7 +125,7 @@
     </div>
   </div>
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", async function() {
       const userId = localStorage.getItem('user_id');
       const userName = localStorage.getItem('user_name');
       if (!userId) {
@@ -98,9 +134,19 @@
       }
       document.getElementById('welcome-box').textContent = `Bienvenido de nuevo${userName ? ", " + userName : ""}`;
 
+      let userAge = null, userGender = null;
+      try {
+        const resp = await fetch(`http://localhost:8000/api/users/by_id/${userId}`);
+        if (resp.ok) {
+          const userData = await resp.json();
+          userAge = Number(userData.edad) || null;
+          userGender = (userData.genero || userData.genero_usuario || '').toLowerCase();
+        }
+      } catch(e) {}
+
       async function obtenerValoresActuales() {
         try {
-          const response = await fetch('http://localhost:8000/api/Mediciones?user_id=' + encodeURIComponent(userId));
+          const response = await fetch('http://localhost:8000/api/mediciones?user_id=' + encodeURIComponent(userId));
           if (!response.ok) throw new Error("Error al cargar datos");
           const mediciones = await response.json();
           if (mediciones.length > 0 && mediciones[0].valores) {
@@ -110,24 +156,89 @@
         return {};
       }
 
-      document.getElementById('manualForm').onsubmit = async function(e){
-        e.preventDefault();
+      function spo2ColorEstado(valor) {
+        if (valor >= 95) return { estado: 'Normal', color: 'status-good' };
+        if (valor >= 90) return { estado: 'Precaución', color: 'status-warning' };
+        return { estado: 'Grave', color: 'status-danger' };
+      }
 
-        // SIEMPRE obtener valores actuales justo antes del POST
+      function rangoGrasaYColor(grasa, sexo, edad) {
+        let normalMin, normalMax, warningMax;
+        if (sexo === 'mujer') {
+          if (edad >= 20 && edad < 40)      { normalMin = 21; normalMax = 33; warningMax = 39; }
+          else if (edad >= 40 && edad <= 59){ normalMin = 23; normalMax = 34; warningMax = 40; }
+          else                              { normalMin = 23; normalMax = 35; warningMax = 40; }
+        } else if (sexo === 'hombre') {
+          if (edad >= 20 && edad < 40)      { normalMin = 8;  normalMax = 20; warningMax = 25; }
+          else if (edad >= 40 && edad <= 59){ normalMin = 11; normalMax = 22; warningMax = 28; }
+          else                              { normalMin = 11; normalMax = 22; warningMax = 28; }
+        } else { return { nivel: '---', color: 'status-warning' }; }
+
+        if(grasa < normalMin) return { nivel: 'Precaución', color: 'status-warning' };
+        if(grasa <= normalMax) return { nivel: 'Normal', color: 'status-good' };
+        if(grasa <= warningMax) return { nivel: 'Moderado', color: 'status-warning' };
+        return { nivel: 'Grave', color: 'status-danger' };
+      }
+
+      function actualizarMetricas(valores) {
+        // SpO₂
+        const spo2Val = valores.spo2 !== undefined ? Number(valores.spo2).toFixed(1) : '--';
+        document.getElementById('spo2-value').textContent = spo2Val;
+        const spo2Est = spo2ColorEstado(Number(valores.spo2));
+        ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('spo2-status').classList.remove(c));
+        document.getElementById('spo2-status').classList.add(spo2Est.color);
+        document.getElementById('spo2-text').textContent = spo2Est.estado;
+
+        // % Grasa (YMCA)
+        const grasaVal = valores.grasa_porc !== undefined ? Number(valores.grasa_porc).toFixed(2) : '--';
+        document.getElementById('grasa-value').textContent = grasaVal;
+        const grasaEst = (valores.grasa_porc !== undefined && userGender && userAge)
+          ? rangoGrasaYColor(Number(valores.grasa_porc), userGender, userAge)
+          : {nivel: '---', color: 'status-warning'};
+        ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('grasa-status').classList.remove(c));
+        document.getElementById('grasa-status').classList.add(grasaEst.color);
+        document.getElementById('grasa-text').textContent = grasaEst.nivel;
+
+        // CO₂ valores en línea
+        document.getElementById('co2-1-value').textContent = valores.co2_1 !== undefined ? valores.co2_1 : '--';
+        document.getElementById('co2-2-value').textContent = valores.co2_2 !== undefined ? valores.co2_2 : '--';
+        document.getElementById('co2-3-value').textContent = valores.co2_3 !== undefined ? valores.co2_3 : '--';
+        document.getElementById('co2-4-value').textContent = valores.co2_4 !== undefined ? valores.co2_4 : '--';
+        document.getElementById('co2-5-value').textContent = valores.co2_5 !== undefined ? valores.co2_5 : '--';
+      }
+
+      obtenerValoresActuales().then(valores => actualizarMetricas(valores));
+
+      document.getElementById('manualForm').onsubmit = async function(e) {
+        e.preventDefault();
         const valoresActuales = await obtenerValoresActuales();
 
         const spo2 = parseFloat(document.getElementById('spo2-input').value);
         const cintura = parseFloat(document.getElementById('cintura-input').value);
         const peso = valoresActuales.peso || 70;
-        const grasa_porc = (0.23 * cintura) + (0.23 * peso) - 5.4;
+        const grasa_porc = parseFloat(((0.23 * cintura) + (0.23 * peso) - 5.4).toFixed(2));
+        const co2_1 = parseFloat(document.getElementById('co2-1-input').value);
+        const co2_2 = parseFloat(document.getElementById('co2-2-input').value);
+        const co2_3 = parseFloat(document.getElementById('co2-3-input').value);
+        const co2_4 = parseFloat(document.getElementById('co2-4-input').value);
+        const co2_5 = parseFloat(document.getElementById('co2-5-input').value);
         const now = new Date().toISOString();
 
-        const nuevosValores = { ...valoresActuales, spo2: spo2, grasa_porc: grasa_porc };
+        const nuevosValores = {
+          ...valoresActuales,
+          spo2: spo2,
+          grasa_porc: grasa_porc,
+          co2_1: co2_1,
+          co2_2: co2_2,
+          co2_3: co2_3,
+          co2_4: co2_4,
+          co2_5: co2_5
+        };
 
         // LOG justo antes del POST
         console.log('POST VALORES:', nuevosValores);
 
-        await fetch('http://localhost:8000/api/Mediciones', {
+        await fetch('http://localhost:8000/api/mediciones', {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -138,14 +249,23 @@
           })
         });
 
-        document.getElementById('spo2-value').textContent = spo2.toFixed(1);
-        document.getElementById('grasa-value').textContent = grasa_porc.toFixed(1);
-        document.getElementById('msg-box').innerHTML = '<div class="success-message">Datos guardados correctamente</div>';
+        actualizarMetricas(nuevosValores);
+
+        document.getElementById('msg-box').innerHTML = `<div class="success-message">Datos guardados correctamente</div>`;
       };
     });
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 

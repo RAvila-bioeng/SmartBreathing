@@ -161,6 +161,14 @@
         <option value="si">Sí</option>
         <option value="no">No</option>
       </select>
+      <!-- CAMPO GENERO AÑADIDO -->
+      <label for="genero"><i class="fas fa-venus-mars icono-campo"></i>Género</label>
+      <select class="user-input" id="genero" required>
+        <option value="">Selecciona</option>
+        <option value="hombre">Masculino</option>
+        <option value="mujer">Femenino</option>
+      </select>
+      <!-- FIN CAMPO GENERO -->
       <label for="edad"><i class="fas fa-birthday-cake icono-campo"></i>Edad</label>
       <input class="user-input" type="number" id="edad" required>
       <label for="peso"><i class="fas fa-weight icono-campo"></i>Peso (kg)</label>
@@ -190,9 +198,10 @@
       const apellido = document.getElementById('apellido').value.trim();
       const codigo = document.getElementById('codigo').value.trim();
       const condiciones = document.getElementById('condiciones').value;
+      const genero = document.getElementById('genero').value;
       const edad = document.getElementById('edad').value;
       const peso = document.getElementById('peso').value;
-      if (!nombre || !apellido || !codigo || !condiciones || !edad || !peso) {
+      if (!nombre || !apellido || !codigo || !condiciones || !genero || !edad || !peso) {
         showToast("Por favor, rellena todos los campos.", "#e13333");
         return;
       }
@@ -204,15 +213,15 @@
         showToast("El apellido debe empezar obligatoriamente con una letra mayúscula. Ejemplo: García", "#e13333");
         return;
       }
-      // Solo los campos del usuario (sin peso)
+      // Ahora incluimos el género en datos
       const datos = {
         nombre,
         apellido,
         codigo,
         condiciones_limitantes: condiciones,
+        genero,
         edad
       };
-      // El peso SOLO se guarda como variable temporal para usar después
       localStorage.setItem('pesoUsuarioTemp', peso);
       localStorage.setItem('datosPerfilUsuario', JSON.stringify(datos));
       window.location.href = "nuevo_usuario_paso2.html"; 
@@ -220,6 +229,7 @@
   </script>
 </body>
 </html>
+
 
 
 
