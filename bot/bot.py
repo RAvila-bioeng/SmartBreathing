@@ -32,6 +32,10 @@ from database import (
     is_database_connected,
     db,  # DBContext para acceder a las colecciones
 )
+from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown
+
+
 
 # Configure logging
 logging.basicConfig(
@@ -117,9 +121,13 @@ class SmartBreathingBot:
             full_context = await self._load_user_full_context(user)
             context.user_data["full_context"] = full_context
 
-            # 2) Enviar resumen amigable
+            # 2) Enviar resumen amigable (Markdown V2 seguro)
             summary_text = self._build_user_summary(full_context)
-            await update.message.reply_text(summary_text, parse_mode="Markdown")
+            if not summary_text:
+                summary_text = "Login successful."
+            await update.message.reply_text(
+                summary_text, parse_mode=ParseMode.MARKDOWN_V2
+            )
 
             # 3) Preguntar por condición limitante si procede
             await self._ask_condition_if_needed(update, context, user)
@@ -150,9 +158,9 @@ class SmartBreathingBot:
     ) -> None:
         """Help command - Shows help"""
         help_text = """
-🤖 **SmartBreathing - Your AI Personal Trainer**
+🤖 *SmartBreathing - Your AI Personal Trainer*
 
-**Main commands:**
+*Main commands:*
 /start - Login or registration
 /help - Show this help
 /menu - Go to main menu
@@ -162,16 +170,16 @@ class SmartBreathingBot:
 /analysis - Performance analysis
 /register - Register your data
 
-**Features:**
-• 📊 Real-time physiological monitoring
-• 🏃‍♂️ AI-powered personalized routines
-• 💬 Natural conversation with your trainer
-• 📈 Performance and progress analysis
-• ⚠️ Automatic safety alerts
+*Features:*
+• Real-time physiological monitoring
+• AI-powered personalized routines
+• Natural conversation with your trainer
+• Performance and progress analysis
+• Automatic safety alerts
 
-**Need help?** Just write your question and I'll respond in a personalized way.
+Need help? Just write your question and I'll respond in a personalized way.
         """
-        await update.message.reply_text(help_text, parse_mode="Markdown")
+        await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN_V2)
 
     async def menu_command(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -208,23 +216,24 @@ class SmartBreathingBot:
         weight = user_data.get("peso", user_data.get("weight", "N/A"))
 
         status_text = f"""
-📊 **Your Current Status**
+📊 Your Current Status
 
-**Profile:**
+Profile:
 • Name: {name}
 • Age: {age} years
 • Weight: {weight} kg
 • Sport: {user_data.get('sport_preference', 'N/A')}
 • Level: {user_data.get('fitness_level', 'N/A')}
 
-**Recent Analysis:**
+Recent Analysis:
 {analysis.get('analysis_summary', 'No recent data')}
 
-**Recommendations:**
+Recommendations:
 {self._format_recommendations(analysis.get('recommendations', []))}
         """
 
-        await update.message.reply_text(status_text, parse_mode="Markdown")
+        # Aquí NO uso parse_mode para evitar líos de Markdown con texto dinámico
+        await update.message.reply_text(status_text)
 
     async def data_command(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -255,8 +264,7 @@ class SmartBreathingBot:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            f"📊 **Your Training Data**\n\n{data_text}",
-            parse_mode="Markdown",
+            f"📊 Your Training Data\n\n{data_text}",
             reply_markup=reply_markup,
         )
 
@@ -282,7 +290,7 @@ class SmartBreathingBot:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            "🏋️‍♂️ **Create New Routine**\n\n"
+            "🏋️‍♂️ Create New Routine\n\n"
             "What type of routine would you like to create?",
             reply_markup=reply_markup,
         )
@@ -306,24 +314,24 @@ class SmartBreathingBot:
         analysis = await self._get_user_analysis(str(user_data["_id"]))
 
         analysis_text = f"""
-🔍 **Performance Analysis with AI**
+🔍 Performance Analysis with AI
 
-**Summary:**
+Summary:
 {analysis.get('analysis_summary', 'Insufficient data for analysis')}
 
-**Trends:**
+Trends:
 {self._format_trends(analysis.get('trends', []))}
 
-**Alerts:**
+Alerts:
 {self._format_alerts(analysis.get('alerts', []))}
 
-**Recommendations:**
+Recommendations:
 {self._format_recommendations(analysis.get('recommendations', []))}
 
-**Next Steps:**
+Next Steps:
 {analysis.get('next_steps', 'Continue with regular training')}
 
-**Analysis Confidence:** {analysis.get('confidence_score', 0) * 100:.0f}%
+Analysis Confidence: {analysis.get('confidence_score', 0) * 100:.0f}%
         """
 
         keyboard = [
@@ -334,7 +342,7 @@ class SmartBreathingBot:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(
-            analysis_text, parse_mode="Markdown", reply_markup=reply_markup
+            analysis_text, reply_markup=reply_markup
         )
 
     # -------------------------------------------------------------------------
@@ -365,9 +373,10 @@ class SmartBreathingBot:
                     logger.error(f"Error saving limiting condition detail: {e}")
 
             context.user_data["awaiting_condition_detail"] = False
+            safe_detail = escape_markdown(detail, version=2)
             await update.message.reply_text(
-                f"Thanks! I'll take your condition into account from now on: *{detail}*",
-                parse_mode="Markdown",
+                f"Thanks! I'll take your condition into account from now on: *{safe_detail}*",
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
             return
 
@@ -388,7 +397,8 @@ class SmartBreathingBot:
         try:
             response = await self._generate_ai_response(message_text, user_data)
             await processing_msg.delete()
-            await update.message.reply_text(response, parse_mode="Markdown")
+            # No usamos parse_mode aquí para evitar errores por Markdown raro del modelo
+            await update.message.reply_text(response)
 
         except Exception as e:
             logger.error(f"Error generating AI response: {e}")
@@ -489,22 +499,22 @@ class SmartBreathingBot:
         name = user_data.get("nombre") or user_data.get("name", "User")
 
         welcome_text = f"""
-🧘‍♂️ **Hello {name}!**
+🧘‍♂️ Hello {name}!
 
 I'm your intelligent personal trainer. How can I help you today?
 
-**Your profile:**
+Your profile:
 • Sport: {user_data.get('sport_preference', 'N/A')}
 • Level: {user_data.get('fitness_level', 'N/A')}
         """
 
         if update.callback_query:
             await update.callback_query.edit_message_text(
-                welcome_text, parse_mode="Markdown", reply_markup=reply_markup
+                welcome_text, reply_markup=reply_markup
             )
         else:
             await update.message.reply_text(
-                welcome_text, parse_mode="Markdown", reply_markup=reply_markup
+                welcome_text, reply_markup=reply_markup
             )
 
     # -------------------------------------------------------------------------
@@ -527,10 +537,9 @@ I'm your intelligent personal trainer. How can I help you today?
 
         # Aviso de que se sobreescribe la última rutina
         await update.callback_query.edit_message_text(
-            "⚠️ Generating a *new routine*. Your previous assigned routine "
+            "⚠️ Generating a new routine. Your previous assigned routine "
             "will be replaced and only the latest one will be used.\n\n"
             "Generating with AI...",
-            parse_mode="Markdown",
         )
 
         routine_goals = {
@@ -560,7 +569,7 @@ I'm your intelligent personal trainer. How can I help you today?
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
                 await update.callback_query.edit_message_text(
-                    routine_text, parse_mode="Markdown", reply_markup=reply_markup
+                    routine_text, reply_markup=reply_markup
                 )
             else:
                 await update.callback_query.edit_message_text(
@@ -648,8 +657,7 @@ I'm your intelligent personal trainer. How can I help you today?
         latest_docs = await latest_doc_cursor.to_list(length=1)
         if not latest_docs:
             await update.callback_query.edit_message_text(
-                "You don't have any assigned routine yet. Use *Routines* to create one.",
-                parse_mode="Markdown",
+                "You don't have any assigned routine yet. Use Routines to create one.",
             )
             return
 
@@ -668,11 +676,12 @@ I'm your intelligent personal trainer. How can I help you today?
             ex_id = str(ex["_id"])
             status = ex.get("resultado", "por_hacer")
             status_emoji = "✅" if status == "finalizado" else "⏳"
-            text += f"{status_emoji} *{ex.get('nombre', 'Exercise')}* - {status}\n"
+            nombre = ex.get("nombre", "Exercise")
+            text += f"{status_emoji} {nombre} - {status}\n"
             keyboard.append(
                 [
                     InlineKeyboardButton(
-                        f"{status_emoji} {ex.get('nombre', 'Exercise')}",
+                        f"{status_emoji} {nombre}",
                         callback_data=f"toggle_exercise_{ex_id}",
                     )
                 ]
@@ -691,7 +700,7 @@ I'm your intelligent personal trainer. How can I help you today?
         )
 
         await update.callback_query.edit_message_text(
-            text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard)
+            text, reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
     async def _toggle_exercise_status(
@@ -776,7 +785,6 @@ I'm your intelligent personal trainer. How can I help you today?
         await update.callback_query.edit_message_text(
             msg
             + "\n\nYour routine is fully completed. I'm really proud of your effort! 🙌",
-            parse_mode="Markdown",
         )
 
     # -------------------------------------------------------------------------
@@ -848,58 +856,42 @@ I'm your intelligent personal trainer. How can I help you today?
         latest_ex = full_context.get("latest_exercise_record")
         measurements = full_context.get("latest_measurements", [])
 
-        name = user.get("nombre", "User")
-        edad = user.get("edad", "N/A")
-        peso = user.get("peso", "N/A")
-        sport = user.get("sport_preference", "N/A")
-        level = user.get("fitness_level", "N/A")
-        objetivo = user.get("objetivo_deportivo", "N/A")
+        # Escapar campos dinámicos para Markdown V2
+        name = escape_markdown(str(user.get("nombre", "User")), version=2)
+        edad = escape_markdown(str(user.get("edad", "N/A")), version=2)
+        peso = escape_markdown(str(user.get("peso", "N/A")), version=2)
+        sport = escape_markdown(str(user.get("sport_preference", "N/A")), version=2)
+        level = escape_markdown(str(user.get("fitness_level", "N/A")), version=2)
+        objetivo = escape_markdown(str(user.get("objetivo_deportivo", "N/A")), version=2)
 
-        text = f"""👋 Welcome back, *{name}*!
-
-**Profile:**
-• Age: {edad} years
-• Weight: {peso} kg
-• Sport: {sport}
-• Level: {level}
-• Goal: {objetivo}
-"""
+        # OJO: el "!" va escapado como \! para MarkdownV2
+        text = (
+            f"👋 Welcome back, *{name}*\\!\n\n"
+            f"*Profile:*\n"
+            f"• Age: {edad} years\n"
+            f"• Weight: {peso} kg\n"
+            f"• Sport: {sport}\n"
+            f"• Level: {level}\n"
+            f"• Goal: {objetivo}\n"
+        )
 
         if latest_ex:
-            text += "\n**Last exercise interaction:**\n"
-            text += f"• Date: {latest_ex.get('fecha_interaccion', 'N/A')}\n"
-            text += f"• Results: {latest_ex.get('resultados', 'N/A')}\n"
+            fecha = escape_markdown(str(latest_ex.get("fecha_interaccion", "N/A")), version=2)
+            resultados = escape_markdown(str(latest_ex.get("resultados", "N/A")), version=2)
+            text += "\n*Last exercise interaction:*\n"
+            text += f"• Date: {fecha}\n"
+            text += f"• Results: {resultados}\n"
 
         if measurements:
-            text += "\n**Recent measurements (last 2 dates):**\n"
+            text += "\n*Recent measurements (last 2 dates):*\n"
             for m in measurements:
-                text += (
-                    f"• {m.get('fecha_medicion', 'N/A')} - "
-                    f"{m.get('tipoDeMedicion', 'N/A')}: {m.get('valor', 'N/A')}\n"
-                )
+                fecha_m = escape_markdown(str(m.get("fecha_medicion", "N/A")), version=2)
+                tipo = escape_markdown(str(m.get("tipoDeMedicion", "N/A")), version=2)
+                valor = escape_markdown(str(m.get("valor", "N/A")), version=2)
+                text += f"• {fecha_m} - {tipo}: {valor}\n"
 
         return text
 
-    async def _ask_condition_if_needed(
-        self,
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE,
-        user: Dict,
-    ) -> None:
-        """
-        Si el usuario indicó condición limitante al registrarse,
-        pero no tenemos detalle, se lo pedimos.
-        """
-        cond = (user.get("condiciones_limitantes") or "").lower()
-        detail = user.get("condicion_limitante_detalle")
-
-        # valores típicos: "si", "sí", "no"
-        if cond in ("si", "sí", "yes", "true", "1") and not detail:
-            context.user_data["awaiting_condition_detail"] = True
-            await update.message.reply_text(
-                "You indicated that you have a limiting medical condition. "
-                "Could you tell me what it is so I can adapt your routines?"
-            )
 
     # -------------------------------------------------------------------------
     # API BACKEND METHODS
@@ -981,7 +973,11 @@ I'm your intelligent personal trainer. How can I help you today?
             limiting_condition = user_data.get('condicion_limitante_detalle')
             condition_note = ""
             if limiting_condition:
-                condition_note = f"\n- ⚠️ IMPORTANT: User has a limiting medical condition: {limiting_condition}. Always adapt recommendations and exercises to respect this condition and prioritize safety."
+                condition_note = (
+                    f"\n- IMPORTANT: User has a limiting medical condition: "
+                    f"{limiting_condition}. Always adapt recommendations and exercises "
+                    f"to respect this condition and prioritize safety."
+                )
 
             prompt = f"""
 USER INFORMATION:
@@ -1029,7 +1025,6 @@ ADDITIONAL RULES:
         except Exception as e:
             logger.error(f"Error generating AI response: {e}")
             return self._generate_basic_response(message, user_data)
-
 
     # -------------------------------------------------------------------------
     # FORMATTING HELPERS
@@ -1084,13 +1079,12 @@ ADDITIONAL RULES:
         else:
             return generic
 
-
     def _format_sensor_data(self, readings: List[Dict]) -> str:
         """Formats sensor data"""
         if not readings:
             return "No data available."
 
-        text = "**Latest measurements:**\n"
+        text = "Latest measurements:\n"
         for reading in readings[:5]:
             timestamp = reading.get("timestamp", "N/A")
             if isinstance(timestamp, str):
@@ -1137,17 +1131,17 @@ ADDITIONAL RULES:
     def _format_routine(self, routine: Dict) -> str:
         """Formats routine"""
         text = f"""
-🏋️‍♂️ **{routine.get('name', 'Personalized Routine')}**
+🏋️‍♂️ {routine.get('name', 'Personalized Routine')}
 
-⏱️ **Duration:** {routine.get('total_duration', 'N/A')} minutes
-🎯 **Difficulty:** {routine.get('difficulty', 'N/A')}
+Duration: {routine.get('total_duration', 'N/A')} minutes
+Difficulty: {routine.get('difficulty', 'N/A')}
 
-**Exercises:**
+Exercises:
 """
 
         for i, exercise in enumerate(routine.get("exercises", [])[:5], 1):
             text += f"""
-{i}. **{exercise.get('name', 'Exercise')}**
+{i}. {exercise.get('name', 'Exercise')}
    • Duration: {exercise.get('duration', 'N/A')} min
    • Intensity: {exercise.get('intensity', 'N/A')}
    • {exercise.get('description', 'No description')}
