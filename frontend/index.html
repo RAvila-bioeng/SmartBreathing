@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/nav.css">
   <style>
     body { font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%); min-height: 100vh; }
     .container { max-width: 1120px; margin: 24px auto 40px auto; background: rgba(255,255,255,0.96); border-radius: 28px; box-shadow: 0 7px 32px rgba(70,82,210,0.11), 0 1px 2px rgba(70,82,210,0.08); padding: 2.3em 2.1em 2.5em 2.1em; min-height: 90vh; }
@@ -18,12 +19,20 @@
     .manual-form input[type="number"] { padding: 7px 9px; font-size: 1.13em; border-radius: 10px; border: 1.2px solid #bbc6f8; outline: none; max-width: 80px; min-width:60px; text-align:right; background: #f5f6fa; margin-right:14px;}
     .manual-form .co2-row { display: flex; flex-wrap: wrap; align-items: center; gap:8px; width:100%; justify-content: center;margin-top:8px;}
     .manual-form .co2-row label { margin-right:3px; }
-    .manual-form button { padding: 12px 22px; font-size: 1.18em; border-radius: 14px; border: none; font-weight: bold; color: white; background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%); cursor: pointer; margin-left:10px;}
-    .manual-form button:hover { background: linear-gradient(102deg, #764ba2 0%, #667eea 100%);}
+    .manual-form button { padding: 12px 22px; font-size: 1.18em; border-radius: 14px; border: none; font-weight: bold; color: white; background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%); cursor: pointer; margin-left:10px; transition: all 0.2s ease-in-out;}
+    .manual-form button:hover {
+      background: linear-gradient(102deg, #764ba2 0%, #667eea 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
     .success-message { color:#20bb4f; font-weight:700; text-align:center; margin-bottom:1.3em; font-size:1.16em; }
     .error-message { color:#f44336; font-weight:700; text-align:center; margin-bottom:1.3em; }
     .metrics-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin: 25px 0 28px 0; }
-    .metric-card { background: #f9fafe; border-radius: 21px; min-width: 211px; min-height: 120px; padding: 15px 20px 17px 20px; box-shadow: 0 1px 16px #8896ee16; text-align: center; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
+    .metric-card { background: #f9fafe; border-radius: 21px; min-width: 211px; min-height: 120px; padding: 15px 20px 17px 20px; box-shadow: 0 1px 16px #8896ee16; text-align: center; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center; position: relative; transition: all 0.2s ease-in-out; }
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(136, 150, 238, 0.25);
+    }
     .metric-title { font-size: 1.08em; font-weight: 800; color: #554ab8; margin-bottom: 4px; letter-spacing: .02em; }
     .metric-value { font-size: 2.05em; font-weight: bold; margin: 5px 0 2px 0; color:#293265; }
     .metric-unit { position: absolute; right: 13px; top: 9px; color: #8797e8; font-size: 1.01em; font-weight: 800; }
@@ -124,6 +133,7 @@
       Gestor de rutinas y recomendaciones disponible a través del Bot de Telegram.
     </div>
   </div>
+  <script src="/static/js/nav.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", async function() {
       const userId = localStorage.getItem('user_id');

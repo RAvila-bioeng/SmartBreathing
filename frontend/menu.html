@@ -6,6 +6,7 @@
   <title>SmartBreathing - Menú</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/nav.css">
   <style>
     html, body {height: 100%; min-height: 100%; margin: 0; padding: 0;}
     body {
@@ -30,34 +31,6 @@
       background-image: url('data:image/svg+xml;utf8,<svg width="420" height="420" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="320" cy="90" r="90" fill="%23cdd7f6" fill-opacity="0.13"/><rect x="60" y="350" width="160" height="80" rx="32" fill="%23745baf" fill-opacity="0.07"/></svg>');
       background-repeat: no-repeat; background-size: cover;
       z-index: 0; opacity: 1;
-    }
-    .main-nav {
-      width: 100%; background: rgba(110,96,200,0.94);
-      color: #fff; font-family: inherit;
-      display: flex; align-items: center;
-      justify-content: flex-start;
-      padding: 1.08em 2em 1.12em 2.2em;
-      position: sticky; top: 0; z-index: 10;
-      box-shadow: 0 2px 18px #836dda24; letter-spacing: .03em;
-    }
-    .logo {
-      font-size: 1.42em; font-weight: 900; letter-spacing: 0.05em;
-      display: flex; align-items: center; gap: 0.6em;
-    }
-    .main-nav ul {
-      display: flex;
-      gap: 2em;
-      list-style: none; margin: 0; padding: 0;
-      margin-left: 43vw;
-    }
-    .main-nav li {display: flex; align-items: center;}
-    .main-nav a {
-      color: #fff; text-decoration: none; font-weight: 600; font-size: 1.13em; opacity: 0.89;
-      transition: color 0.18s; padding: 0.13em .7em; border-radius: 0.7em; white-space: nowrap;
-      display: flex; align-items: center; gap: 0.38em;
-    }
-    .main-nav a:hover, .main-nav li.active a {
-      color: #ffe29a; opacity: 1; background: rgba(255,255,255,0.11); text-shadow: 0 1px 18px #e6d8ff41;
     }
     .menu-wrap {
       flex:1; display:flex; align-items:center; justify-content:center;
@@ -107,14 +80,6 @@
   </style>
 </head>
 <body>
-  <nav class="main-nav">
-    <div class="logo"><i class="fa-solid fa-spa"></i> SmartBreathing</div>
-    <ul>
-      <li class="active"><a href="menu.html"><i class="fas fa-home"></i> Inicio</a></li>
-      <li><a href="nuevo_usuario_paso1.html"><i class="fas fa-users"></i> Usuarios</a></li>
-      <li><a href="index.html"><i class="fas fa-chart-bar"></i> Dashboard</a></li>
-    </ul>
-  </nav>
   <div class="menu-wrap">
     <div class="menu-container">
       <h1>🧘‍♂️ <span style="font-weight:900; color:#6066dc">SmartBreathing</span></h1>
@@ -125,6 +90,7 @@
       <button class="btn-menu" onclick="window.location.href='login.html'"><i class="fas fa-heartbeat"></i> Iniciar mediciones</button>
     </div>
   </div>
+  <script src="/static/js/nav.js"></script>
 </body>
 </html>
 

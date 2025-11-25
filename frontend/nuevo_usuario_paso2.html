@@ -5,6 +5,7 @@
   <title>SmartBreathing - Personalización</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/nav.css">
   <style>
     body { font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif; min-height:100vh; margin:0; background: linear-gradient(120deg, #667eea 0%, #764ba2 100%); background-size: 200% 200%; animation: gradientMove 12s ease-in-out infinite; box-sizing:border-box; }
     @keyframes gradientMove { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;}}
@@ -106,6 +107,7 @@
     <div class="mensaje" id="mensaje-usuario"></div>
   </div>
   <div id="toast" class="toast"></div>
+  <script src="/static/js/nav.js"></script>
   <script>
     function showToast(msg, color="#684CB2") {
       let t = document.getElementById("toast");
