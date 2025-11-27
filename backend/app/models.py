@@ -28,6 +28,7 @@ class UserProfile(BaseModel):
     apellido: Optional[str] = None
     codigo: Optional[str] = None
     condiciones_limitantes: Optional[str] = None
+    condicion_limitante_detalle: Optional[str] = None
     genero: Optional[str] = None # <-- Añadido aquí
     edad: Optional[int] = None
     weight: Optional[float] = None
@@ -134,5 +135,15 @@ class Medicion(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
+class ExerciseInRoutine(BaseModel):
+    name: str
+    description: str
+    duration: int
+    intensity: str
 
-
+class RoutineResponse(BaseModel):
+    name: str
+    total_duration: int
+    difficulty: str
+    dias_semana: List[str]
+    exercises: List[ExerciseInRoutine]

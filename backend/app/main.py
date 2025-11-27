@@ -7,7 +7,7 @@ from datetime import datetime
 import os
 from bson import ObjectId
 
-from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate
+from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate, RoutineResponse
 from .db import get_database
 from .ai_engine import SmartBreathingAI
 
@@ -202,21 +202,31 @@ async def check_user(datos: dict = Body(...)):
         raise HTTPException(status_code=404, detail="Usuario no existente, regístrese")
     return {"user_id": str(usuario["_id"])}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# -------------- AI ROUTINE --------------
+@app.post("/api/ai/generate-routine/{user_id}", response_model=RoutineResponse)
+async def generate_routine_endpoint(user_id: str, goals: List[str] = Body(...)):
+    # 1. Fetch User
+    db = get_database()
+    try:
+        obj_id = ObjectId(user_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid user_id format")
+    
+    user_doc = db.users.find_one({"_id": obj_id})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_profile = UserProfile(**user_doc)
+    
+    # 2. Call AI Engine
+    try:
+        routine = ai_engine.generate_routine_from_db(user_profile, goals)
+    except Exception as e:
+        # Log error in production
+        raise HTTPException(status_code=500, detail=f"Internal error generating routine: {str(e)}")
+    
+    # 3. Check if empty (should only happen if 422 desired)
+    if not routine or not routine.exercises:
+         raise HTTPException(status_code=422, detail="No suitable exercises found for this profile and constraints")
+         
+    return routine
