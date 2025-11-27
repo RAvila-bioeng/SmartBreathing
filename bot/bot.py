@@ -142,6 +142,45 @@ class SmartBreathingBot:
             context.user_data.clear()
             return ConversationHandler.END
 
+    async def _ask_condition_if_needed(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        user: Dict,
+    ) -> None:
+        """
+        Checks if the user has a limiting condition but no details yet.
+        If so, asks for details and sets a flag in user_data.
+        """
+        # Read from user document
+        cond = user.get("condiciones_limitantes", "")
+        # Normalize: check if it looks like "yes"
+        # Since it's often a string "si", "no", or boolean
+        has_condition = False
+        if isinstance(cond, bool):
+            has_condition = cond
+        elif isinstance(cond, str):
+            cond_lower = cond.lower().strip()
+            if cond_lower in ["si", "sí", "yes", "true", "1", "s"]:
+                has_condition = True
+
+        detail = user.get("condicion_limitante_detalle")
+
+        if has_condition and not detail:
+            # Set flag
+            context.user_data["awaiting_condition_detail"] = True
+
+            # Ask user
+            text = (
+                "⚠️ I see you indicated a limiting condition in your profile.\n\n"
+                "Could you briefly describe it? (e.g. 'Knee injury', 'Asthma', 'Back pain')\n"
+                "This helps me adapt the exercises for your safety."
+            )
+            await update.message.reply_text(text)
+        else:
+            # Ensure flag is false
+            context.user_data["awaiting_condition_detail"] = False
+
     async def cancel(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> int:
@@ -865,6 +904,11 @@ Your profile:
         objetivo = escape_markdown(str(user.get("objetivo_deportivo", "N/A")), version=2)
 
         # OJO: el "!" va escapado como \! para MarkdownV2
+        # Y también el "-" si es texto estático, pero aquí usamos "•" que no requiere escape
+        # si no es parte de una estructura.
+        # Sin embargo, los guiones dentro de los f-strings estáticos deben escaparse si
+        # están en un bloque de texto plano.
+
         text = (
             f"👋 Welcome back, *{name}*\\!\n\n"
             f"*Profile:*\n"
@@ -883,12 +927,13 @@ Your profile:
             text += f"• Results: {resultados}\n"
 
         if measurements:
-            text += "\n*Recent measurements (last 2 dates):*\n"
+            text += "\n*Recent measurements \\(last 2 dates\\):*\n"
             for m in measurements:
                 fecha_m = escape_markdown(str(m.get("fecha_medicion", "N/A")), version=2)
                 tipo = escape_markdown(str(m.get("tipoDeMedicion", "N/A")), version=2)
                 valor = escape_markdown(str(m.get("valor", "N/A")), version=2)
-                text += f"• {fecha_m} - {tipo}: {valor}\n"
+                # Escapar guión y dos puntos
+                text += f"• {fecha_m} \\- {tipo}: {valor}\n"
 
         return text
 
@@ -1151,6 +1196,17 @@ Exercises:
 
 
 # -------------------------------------------------------------------------
+# GLOBAL ERROR HANDLER
+# -------------------------------------------------------------------------
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    if isinstance(update, Update) and update.effective_message:
+         await update.effective_message.reply_text(
+             "❌ An unexpected error occurred. Please try again later or contact support."
+         )
+
+# -------------------------------------------------------------------------
 # MAIN
 # -------------------------------------------------------------------------
 def main() -> None:
@@ -1166,6 +1222,9 @@ def main() -> None:
     # Conexión a MongoDB gestionada por Application
     app.post_init = connect_to_mongo
     app.post_shutdown = close_mongo_connection
+
+    # Add Error Handler
+    app.add_error_handler(error_handler)
 
     # Authentication conversation handler
     auth_handler = ConversationHandler(
