@@ -29,7 +29,7 @@ class UserProfile(BaseModel):
     codigo: Optional[str] = None
     condiciones_limitantes: Optional[str] = None
     condicion_limitante_detalle: Optional[str] = None
-    genero: Optional[str] = None # <-- Añadido aquí
+    genero: Optional[str] = None
     edad: Optional[int] = None
     weight: Optional[float] = None
     sport_preference: Optional[str] = None
@@ -52,7 +52,7 @@ class UserCreate(BaseModel):
     apellido: str
     codigo: str
     condiciones_limitantes: str
-    genero: str                   # <-- Obligatorio y string
+    genero: str
     edad: int
     peso: float
     sport_preference: str
@@ -140,7 +140,7 @@ class ExerciseInRoutine(BaseModel):
     description: str
     duration: int
     intensity: str
-    id_ejercicio: Optional[str] = None # Link back to Ejercicios
+    id_ejercicio: Optional[str] = None
 
 class RoutineResponse(BaseModel):
     name: str
@@ -148,3 +148,6 @@ class RoutineResponse(BaseModel):
     difficulty: str
     dias_semana: List[str]
     exercises: List[ExerciseInRoutine]
+
+class RoutineRequest(BaseModel):
+    goals: Optional[List[str]] = None
