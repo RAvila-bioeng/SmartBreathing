@@ -7,7 +7,7 @@ from datetime import datetime
 import os
 from bson import ObjectId
 
-from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate, RoutineResponse
+from .models import UserProfile, SensorReading, WorkoutRoutine, AIRecommendation, UserCreate, RoutineResponse, RoutineRequest
 from .db import get_database
 from .ai_engine import SmartBreathingAI
 
@@ -204,7 +204,7 @@ async def check_user(datos: dict = Body(...)):
 
 # -------------- AI ROUTINE --------------
 @app.post("/api/ai/generate-routine/{user_id}", response_model=RoutineResponse)
-async def generate_routine_endpoint(user_id: str, goals: List[str] = Body(...)):
+async def generate_routine_endpoint(user_id: str, request: RoutineRequest = Body(default_factory=RoutineRequest)):
     # 1. Fetch User
     db = get_database()
     try:
@@ -219,6 +219,8 @@ async def generate_routine_endpoint(user_id: str, goals: List[str] = Body(...)):
     user_profile = UserProfile(**user_doc)
     
     # 2. Call AI Engine
+    # Use request.goals or fallback
+    goals = request.goals or ["mixto"]
     try:
         routine = ai_engine.generate_routine_from_db(user_profile, goals)
     except Exception as e:

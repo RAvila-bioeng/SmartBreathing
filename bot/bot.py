@@ -1055,7 +1055,7 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{self.api_base_url}/api/ai/generate-routine/{user_id}",
-                    json=goals,
+                    json={"goals": goals},
                 ) as response:
                     if response.status == 200:
                         return await response.json()

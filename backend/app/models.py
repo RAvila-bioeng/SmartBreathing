@@ -142,6 +142,9 @@ class ExerciseInRoutine(BaseModel):
     intensity: str
     id_ejercicio: Optional[str] = None # Link back to Ejercicios
 
+class RoutineRequest(BaseModel):
+    goals: Optional[List[str]] = ["mixto"]
+
 class RoutineResponse(BaseModel):
     name: str
     total_duration: int
