@@ -140,6 +140,7 @@ class ExerciseInRoutine(BaseModel):
     description: str
     duration: int
     intensity: str
+    id_ejercicio: Optional[str] = None # Link back to Ejercicios
 
 class RoutineResponse(BaseModel):
     name: str

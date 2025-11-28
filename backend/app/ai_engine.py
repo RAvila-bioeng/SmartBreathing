@@ -18,226 +18,255 @@ class SmartBreathingAI:
         Follows a 'best effort' approach: strict filters first, then relaxed.
         """
         
-        # 1. Prepare base filters from UserProfile
-        # Mappings
-        # sport_preference mapping (simple text match for now)
-        # We can try to match 'modalidad' with user_profile.sport_preference
+        # 1. Prepare Mappings
+        # Level Mapping: Map user profile level to Excel/DB 'nivel_detallado'
+        user_level = (user_profile.fitness_level or "intermedio").lower()
+        if "principiante" in user_level or "beginner" in user_level:
+            target_level = "Principiante"
+        elif "avanzado" in user_level or "advanced" in user_level:
+            target_level = "Avanzado"
+        else:
+            target_level = "Intermedio"
+
+        # Intensity Mapping: Map user 'grado_exigencia' to Excel/DB 'intensidad_relativa'
+        user_intensity = (user_profile.grado_exigencia or "moderado").lower()
+        if "bajo" in user_intensity:
+            target_intensity = "Bajo"
+        elif "exigente" in user_intensity:
+            target_intensity = "Alto"
+        else:
+            target_intensity = "Medio"
+
+        # Equipment Check
+        user_equipment = (user_profile.equipamiento or "").lower()
+        has_facilities = any(x in user_equipment for x in ["instalaciones", "gimnasio", "gym", "piscina"])
+
+        # Sport Preference Mapping to 'modalidad' regex
+        sport_pref = (user_profile.sport_preference or "").lower()
+        sport_regex = None
+        if "natacion" in sport_pref or "natación" in sport_pref or "swimming" in sport_pref:
+            sport_regex = "Natación|Piscina|Agua"
+        elif "gimnasio" in sport_pref or "gym" in sport_pref or "pesas" in sport_pref:
+            sport_regex = "Gimnasio|Musculación|Fuerza"
+        elif "atletismo" in sport_pref or "running" in sport_pref or "correr" in sport_pref:
+            sport_regex = "Atletismo|Carrera|Pista|Running"
+        elif "calistenia" in sport_pref:
+            sport_regex = "Calistenia|Peso corporal"
         
-        # Fitness level mapping
-        level_map = {
-            "principiante": "principiante",
-            "intermedio": "intermedio",
-            "avanzado": "avanzado",
-            # Fallbacks or english versions if needed
-            "beginner": "principiante",
-            "intermediate": "intermedio",
-            "advanced": "avanzado"
-        }
-        target_level = level_map.get(str(user_profile.fitness_level).lower(), "intermedio")
-
-        # Intensity mapping
-        intensity_map = {
-            "bajo": "Bajo",
-            "moderado": "Medio",
-            "exigente": "Alto"
-        }
-        target_intensity = intensity_map.get(str(user_profile.grado_exigencia).lower(), "Medio")
-
-        # Equipment
-        has_facilities = str(user_profile.equipamiento).lower() in ["instalaciones", "gimnasio", "gym"]
+        # 2. Build Queries based on Routine Type
+        routine_type = goals[0].lower() if goals else "mixto"
         
-        # Base query
-        query: Dict[str, Any] = {}
-
-        # 2. Build Query - Attempt 1: Strict
-        # Filter by modality if possible (using regex for flexibility)
-        if user_profile.sport_preference:
-            # Try to match the sport preference in modality or tags
-            # Construct a regex that matches the sport name
-            sport_regex = {"$regex": user_profile.sport_preference, "$options": "i"}
-            query["$or"] = [
-                {"modalidad": sport_regex},
-                {"tags_ia": sport_regex},
-                {"objetivo_entrenamiento": sport_regex}
+        # Base Exclusion Query (Safety & Equipment)
+        base_query = {}
+        if not has_facilities:
+            # Exclude items requiring heavy machinery if no facilities
+            # We look for keywords in 'modalidad', 'material_utilizado', 'superficie'
+            base_query["$and"] = [
+                {"modalidad": {"$not": {"$regex": "Gimnasio|Piscina|Natación", "$options": "i"}}},
+                {"material_utilizado": {"$not": {"$regex": "Máquina|Prensa|Barra olímpica|Polea", "$options": "i"}}},
+                {"superficie": {"$not": {"$regex": "Pista atletismo|Piscina", "$options": "i"}}}
             ]
 
-        # Filter by level
-        query["nivel_detallado"] = target_level
+        # Block Type Queries
+        # Note: Excel fields are exact, but we use regex for safety
+        q_warmup = base_query.copy()
+        q_warmup["tipo_bloque"] = {"$regex": "Calentamiento|Movilidad|Técnica", "$options": "i"}
+        
+        q_cooldown = base_query.copy()
+        q_cooldown["tipo_bloque"] = {"$regex": "Vuelta a la calma|Recuperación|Estiramientos", "$options": "i"}
+        
+        q_main = base_query.copy()
+        q_main["tipo_bloque"] = {"$regex": "Principal|Núcleo|Trabajo|Complementario", "$options": "i"}
 
-        # Filter by intensity
-        query["intensidad_relativa"] = target_intensity
-
-        # Filter by equipment (exclusion logic)
-        if not has_facilities:
-            # If no facilities, exclude modalities that imply gym/pool
-            # AND exclude exercises that require machines
-            # Exclude modalities:
-            exclude_modalities = ["Gimnasio", "Natación", "Natacion"]
-            # But wait, if preference IS swimming, and no facilities, we probably shouldn't exclude swimming completely? 
-            # Or assume swimming implies "I have access to a pool"?
-            # Prompt says: "If equipamiento is 'instalaciones', allow exercises that require gym/pool/etc.
-            # If not, exclude exercises that clearly require special facilities or equipment (machines, pool, heavy equipment)."
-            # So if equipamiento != instalaciones, we MUST exclude pool/gym stuff.
+        # Add Routine Type constraints to Main Block
+        if routine_type == "aerobico":
+            q_main["$or"] = [
+                {"objetivo_fisiológico": {"$regex": "Aeróbico", "$options": "i"}},
+                {"tags_ia": {"$regex": "cardio|aeróbico|resistencia", "$options": "i"}},
+                {"modalidad": {"$regex": "Atletismo|Natación|Carrera", "$options": "i"}}
+            ]
+        elif routine_type == "anaerobico":
+            q_main["$or"] = [
+                {"objetivo_fisiológico": {"$regex": "Anaeróbico", "$options": "i"}},
+                {"tags_ia": {"$regex": "sprint|potencia|anaeróbico", "$options": "i"}}
+            ]
+        elif routine_type == "fuerza":
+            q_main["$or"] = [
+                {"objetivo_entrenamiento": {"$regex": "Fuerza|Hipertrofia", "$options": "i"}},
+                {"tags_ia": {"$regex": "fuerza|pesas|musculación", "$options": "i"}},
+                {"modalidad": {"$regex": "Gimnasio|Calistenia", "$options": "i"}}
+            ]
+        elif routine_type == "respiracion":
+            q_main["$or"] = [
+                {"tags_ia": {"$regex": "respiración|relajación", "$options": "i"}},
+                {"objetivo_entrenamiento": {"$regex": "Respiración", "$options": "i"}}
+            ]
+            # Breathing often overlaps with cooldown or technique
+            q_main["tipo_bloque"] = {"$regex": "Técnica|Vuelta a la calma|Recuperación", "$options": "i"}
+        
+        # 3. Helper to Fetch Exercises with Progressive Relaxation
+        def fetch_exercises(query_base, limit=10, prioritize_sport=True):
+            # Stage 1: Strict (Sport + Level + Intensity)
+            q1 = query_base.copy()
+            q1["nivel_detallado"] = {"$regex": f"^{target_level}$", "$options": "i"}
+            q1["intensidad_relativa"] = {"$regex": f"^{target_intensity}$", "$options": "i"}
+            if prioritize_sport and sport_regex:
+                q1["modalidad"] = {"$regex": sport_regex, "$options": "i"}
             
-            # We can use $nin for modalidad
-            query["modalidad"] = {"$nin": exclude_modalities}
+            exercises = list(self.db.Ejercicios.find(q1).limit(limit))
+            if len(exercises) >= 2: return exercises
             
-            # We could also filter out exercises that might require equipment via tags or text if we had better data.
-            # For now, excluding broad modalities is the safest bet.
+            # Stage 2: Relax Sport (keep Level + Intensity)
+            # If we didn't find specific sport exercises, try generic but matching level/intensity
+            # Only do this if we were filtering by sport
+            if prioritize_sport and sport_regex:
+                q2 = query_base.copy()
+                q2["nivel_detallado"] = {"$regex": f"^{target_level}$", "$options": "i"}
+                q2["intensidad_relativa"] = {"$regex": f"^{target_intensity}$", "$options": "i"}
+                # Exclude specific sport filter
+                exercises = list(self.db.Ejercicios.find(q2).limit(limit))
+                if len(exercises) >= 2: return exercises
 
-        # Execute Query
-        exercises_cursor = self.db.Ejercicios.find(query)
-        exercises = list(exercises_cursor)
-
-        # 3. Fallback / Relaxing Filters
-        if len(exercises) < 3:
-            # Relax intensity
-            if "intensidad_relativa" in query:
-                del query["intensidad_relativa"]
-            exercises = list(self.db.Ejercicios.find(query))
-        
-        if len(exercises) < 3:
-            # Relax level
-            if "nivel_detallado" in query:
-                del query["nivel_detallado"]
-            exercises = list(self.db.Ejercicios.find(query))
-
-        if len(exercises) < 3:
-            # Relax sport preference (fetch generic exercises)
-            # Re-build query with just equipment constraint
-            query = {} 
-            if not has_facilities:
-                 query["modalidad"] = {"$nin": ["Gimnasio", "Natación", "Natacion"]}
-            exercises = list(self.db.Ejercicios.find(query))
-
-        # 4. Filter for Limiting Conditions (In Memory)
-        # Using condicion_limitante_detalle if available, or fallback to condiciones_limitantes if string details are there
-        details = (user_profile.condicion_limitante_detalle or "").lower()
-        
-        # If detail is empty, maybe check conditions_limitantes in case it was stored there
-        if not details and user_profile.condiciones_limitantes and len(user_profile.condiciones_limitantes) > 5:
-             details = user_profile.condiciones_limitantes.lower()
-        
-        if details:
-            # Simple keyword exclusion
-            risky_keywords = []
-            if "rodilla" in details or "knee" in details:
-                risky_keywords.extend(["salto", "jump", "impacto", "sentadilla profunda", "deep squat"])
-            if "espalda" in details or "back" in details:
-                risky_keywords.extend(["peso muerto", "deadlift", "hipertextensión", "overhead", "militar"])
-            if "hombro" in details or "shoulder" in details:
-                risky_keywords.extend(["overhead", "press militar", "dominadas", "pull up"])
+            # Stage 3: Relax Intensity (keep Level)
+            q3 = query_base.copy()
+            q3["nivel_detallado"] = {"$regex": f"^{target_level}$", "$options": "i"}
+            if prioritize_sport and sport_regex:
+                 q3["modalidad"] = {"$regex": sport_regex, "$options": "i"}
             
-            if risky_keywords:
-                safe_exercises = []
-                for ex in exercises:
-                    is_safe = True
-                    # Check description/notes for risky keywords
-                    text_to_check = (
-                        str(ex.get("ejercicio", "")) + " " + 
-                        str(ex.get("caracteristicas_especiales", "")) + " " + 
-                        str(ex.get("notas_entrenador", ""))
-                    ).lower()
-                    
-                    for kw in risky_keywords:
-                        if kw in text_to_check:
-                            is_safe = False
-                            break
-                    if is_safe:
-                        safe_exercises.append(ex)
-                exercises = safe_exercises
+            exercises = list(self.db.Ejercicios.find(q3).limit(limit))
+            if len(exercises) >= 2: return exercises
 
-        # If we filtered everything out, go back to raw exercises (risky is better than empty? or return empty?)
-        # Prompt says "avoid obviously risky". If nothing left, we might fail or return basics.
-        # Let's keep what we have.
-
-        # 5. Selection (Warm-up, Main, Cool-down)
-        # Categorize
-        warmups = []
-        main_part = []
-        cooldowns = []
-
-        for ex in exercises:
-            # Naive classification based on text
-            name = str(ex.get("ejercicio", "")).lower()
-            obj_ent = str(ex.get("objetivo_entrenamiento", "")).lower()
-            tipo_bloque = str(ex.get("tipo_bloque", "")).lower()
-
-            if "calentamiento" in name or "calentamiento" in obj_ent or "warm" in name or "complementario" in tipo_bloque:
-                warmups.append(ex)
-            elif "estiramiento" in name or "vuelta a la calma" in name or "respiracion" in name or "cool" in name:
-                cooldowns.append(ex)
-            else:
-                main_part.append(ex)
-
-        selected_routine = []
-        
-        # Select 1 Warmup
-        if warmups:
-            selected_routine.append(random.choice(warmups))
-        elif main_part:
-             # Use a low intensity main exercise as warmup if forced
-             pass 
-
-        # Select 2-4 Main
-        count_main = min(len(main_part), random.randint(2, 4))
-        if count_main > 0:
-            selected_routine.extend(random.sample(main_part, count_main))
-        
-        # Select 1 Cooldown
-        if cooldowns:
-            selected_routine.append(random.choice(cooldowns))
-        
-        # Fallback if routine is too short (fill with whatever)
-        if len(selected_routine) < 3 and len(exercises) > len(selected_routine):
-            needed = 3 - len(selected_routine)
-            remaining = [e for e in exercises if e not in selected_routine]
-            if remaining:
-                selected_routine.extend(remaining[:needed])
-
-        # 6. Build Response
-        final_exercises = []
-        total_time = 0
-        
-        for ex in selected_routine:
-            # Duration parsing
-            dur = 10 # default
-            try:
-                dur = int(float(ex.get("duracion_aprox_min", 10)))
-            except:
-                pass
+            # Stage 4: Relax Level (Allow neighbor levels)
+            q4 = query_base.copy()
+            # Allow any level, basically just matching base criteria
+            if prioritize_sport and sport_regex:
+                 q4["modalidad"] = {"$regex": sport_regex, "$options": "i"}
             
-            total_time += dur
+            exercises = list(self.db.Ejercicios.find(q4).limit(limit))
             
-            final_exercises.append(ExerciseInRoutine(
-                name=ex.get("ejercicio", "Ejercicio sin nombre"),
-                description=ex.get("notas_entrenador") or ex.get("descripcion") or ex.get("objetivo_entrenamiento") or "Realizar según indicaciones.",
-                duration=dur,
-                intensity=ex.get("intensidad_relativa", "Media")
-            ))
+            # Stage 5: "Hail Mary" - just the base query
+            if len(exercises) < 1:
+                exercises = list(self.db.Ejercicios.find(query_base).limit(limit))
+                
+            return exercises
 
-        # Days of week logic
-        freq = user_profile.frecuencia_entrenamiento or 3
-        days = []
-        if freq == 1:
-            days = ["Monday"]
-        elif freq == 2:
-            days = ["Monday", "Thursday"]
-        elif freq == 3:
-            days = ["Monday", "Wednesday", "Friday"]
-        elif freq >= 4:
-            days = ["Monday", "Tuesday", "Thursday", "Friday"]
+        # 4. Fetch blocks
+        warmups = fetch_exercises(q_warmup, limit=5, prioritize_sport=True)
+        cooldowns = fetch_exercises(q_cooldown, limit=5, prioritize_sport=True)
+        
+        main_block = []
+        if routine_type == "mixto":
+            # For mixed, fetch cardio and strength separately
+            q_cardio = q_main.copy()
+            q_cardio["$or"] = [{"tags_ia": {"$regex": "cardio|aeróbico", "$options": "i"}}]
+            cardio_ex = fetch_exercises(q_cardio, limit=5, prioritize_sport=True)
+            
+            q_str = q_main.copy()
+            q_str["$or"] = [{"tags_ia": {"$regex": "fuerza|musculación", "$options": "i"}}]
+            str_ex = fetch_exercises(q_str, limit=5, prioritize_sport=True)
+            
+            main_block = cardio_ex + str_ex
         else:
-            days = ["Monday", "Wednesday", "Friday"] # Default
+            main_block = fetch_exercises(q_main, limit=20, prioritize_sport=True)
 
-        routine_name = f"Rutina {user_profile.sport_preference or 'General'} - {user_profile.fitness_level or 'Intermedio'}"
+        # 5. Safety Filter (Condiciones Limitantes)
+        limiting_details = (user_profile.condicion_limitante_detalle or "").lower()
+        if not limiting_details and user_profile.condiciones_limitantes and len(user_profile.condiciones_limitantes) > 4:
+            limiting_details = user_profile.condiciones_limitantes.lower()
+
+        def is_safe(ex):
+            if not limiting_details: return True
+            # Build text to check
+            check_text = " ".join([
+                str(ex.get("ejercicio", "")),
+                str(ex.get("caracteristicas_especiales", "")),
+                str(ex.get("notas_entrenador", ""))
+            ]).lower()
+            
+            # Simple keyword matching rules
+            if ("rodilla" in limiting_details or "knee" in limiting_details) and \
+               ("salto" in check_text or "jump" in check_text or "impacto" in check_text):
+                return False
+            if ("espalda" in limiting_details or "back" in limiting_details) and \
+               ("peso muerto" in check_text or "deadlift" in check_text or "overhead" in check_text):
+                return False
+            if ("hombro" in limiting_details or "shoulder" in limiting_details) and \
+               ("press militar" in check_text or "overhead" in check_text):
+                return False
+            return True
+
+        warmups = [e for e in warmups if is_safe(e)]
+        main_block = [e for e in main_block if is_safe(e)]
+        cooldowns = [e for e in cooldowns if is_safe(e)]
+
+        # 6. Assemble Routine
+        final_selection = []
+        
+        # Add Warmup
+        if warmups:
+            final_selection.append(random.choice(warmups))
+        
+        # Add Main Exercises
+        # Determine how many based on time
+        target_time = user_profile.tiempo_dedicable_diario or 45
+        current_time = sum([int(float(e.get("duracion_aprox_min", 5))) for e in final_selection])
+        
+        random.shuffle(main_block)
+        
+        for ex in main_block:
+            # Avoid duplicates (by ID)
+            if any(str(item.get("_id")) == str(ex.get("_id")) for item in final_selection):
+                continue
+                
+            dur = int(float(ex.get("duracion_aprox_min", 10)))
+            if current_time + dur > target_time + 5: # Small buffer
+                break
+            
+            final_selection.append(ex)
+            current_time += dur
+            
+            # Max 6 exercises in main block to avoid overwhelm
+            if len(final_selection) >= 6:
+                break
+        
+        # Add Cooldown if time permits or strictly at least one
+        if cooldowns and current_time < target_time + 10:
+             # Try to pick one different from what we have
+             cd = random.choice(cooldowns)
+             if not any(str(item.get("_id")) == str(cd.get("_id")) for item in final_selection):
+                 final_selection.append(cd)
+                 current_time += int(float(cd.get("duracion_aprox_min", 5)))
+
+        # 7. Format Response
+        routine_exercises = []
+        for ex in final_selection:
+            dur = int(float(ex.get("duracion_aprox_min", 10)))
+            routine_exercises.append(ExerciseInRoutine(
+                name=ex.get("ejercicio", "Ejercicio"),
+                description=ex.get("notas_entrenador") or ex.get("objetivo_entrenamiento") or "",
+                duration=dur,
+                intensity=ex.get("intensidad_relativa", "Media"),
+                id_ejercicio=str(ex.get("_id"))
+            ))
+            
+        # Frequency Days
+        freq = user_profile.frecuencia_entrenamiento or 3
+        days_map = {
+            1: ["Lunes"],
+            2: ["Lunes", "Jueves"],
+            3: ["Lunes", "Miércoles", "Viernes"],
+            4: ["Lunes", "Martes", "Jueves", "Viernes"],
+            5: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+        }
+        days = days_map.get(freq, ["Lunes", "Miércoles", "Viernes"])
+        if freq > 5: days = days_map[5]
 
         return RoutineResponse(
-            name=routine_name,
-            total_duration=total_time,
-            difficulty=user_profile.fitness_level or "intermedio",
+            name=f"Rutina {routine_type.capitalize()} ({target_level})",
+            total_duration=current_time,
+            difficulty=target_level,
             dias_semana=days,
-            exercises=final_exercises
+            exercises=routine_exercises
         )
 
     def analyze_physiological_data(self, user_id: str, recent_readings: List[SensorReading] = None) -> Dict:
