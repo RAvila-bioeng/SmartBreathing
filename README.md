@@ -131,6 +131,10 @@ MONGODB_DB=smartbreathing
    ```bash
    make frontend
    ```
+   Alternativamente, si no usas make:
+   ```bash
+   cd frontend && python -m http.server 3000
+   ```
 2. Abrir http://localhost:3000 en el navegador
 
 ### 5) Ingesta desde Arduino (serial)
