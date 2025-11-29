@@ -51,41 +51,88 @@ class SmartBreathingAI:
         else:
             target_intensity = "moderado"
 
-        # Equipamiento
-        user_equipment = (user_profile.equipamiento or "").lower()
-        has_facilities = any(
-            x in user_equipment
-            for x in ["instalaciones", "gimnasio", "gym", "piscina", "club"]
-        )
+        # Equipamiento - DETECCIÓN DE MODOS
+        user_equipment = (user_profile.equipamiento or "").lower().strip()
+        
+        # Flags de modo
+        mode_no_equipment = False
+        mode_home_with_equipment = False
+        mode_facilities = False
+
+        # Lógica de detección priorizando valores exactos
+        if user_equipment == "casa_sin_equipamiento":
+            mode_no_equipment = True
+        elif user_equipment == "casa_con_equipamiento":
+            mode_home_with_equipment = True
+        elif user_equipment == "instalaciones":
+            mode_facilities = True
+        else:
+            # Fallback por palabras clave
+            if any(x in user_equipment for x in ["instalaciones", "gimnasio", "gym", "piscina", "club", "polideportivo"]):
+                mode_facilities = True
+            elif any(x in user_equipment for x in ["con material", "mancuernas", "pesas", "gomas", "kettlebell"]):
+                mode_home_with_equipment = True
+            elif any(x in user_equipment for x in ["sin equipamiento", "sin material", "peso corporal"]):
+                mode_no_equipment = True
+            else:
+                # Default conservador
+                mode_no_equipment = True
+
+        logger.info(f"Equipment Mode: NoEq={mode_no_equipment}, HomeEq={mode_home_with_equipment}, Facilities={mode_facilities}")
 
         # Deporte preferido
         sport_pref_raw = (user_profile.sport_preference or "").strip().lower()
         main_deporte = sport_pref_raw or None
 
-        # Palabras clave según el deporte
-        sport_keywords = None
-        if main_deporte:
-            if "natacion" in main_deporte or "natación" in main_deporte or "swim" in main_deporte:
-                sport_keywords = "natacion|natación|piscina|nado|nadar|agua|swim"
-            elif "gimnasio" in main_deporte or "gym" in main_deporte or "pesas" in main_deporte or "crossfit" in main_deporte:
-                sport_keywords = "gimnasio|gym|pesas|musculación|fuerza|crossfit"
-            elif "atletismo" in main_deporte or "running" in main_deporte or "correr" in main_deporte:
-                sport_keywords = "atletismo|carrera|running|pista|series|fondo"
-            elif "calistenia" in main_deporte:
-                sport_keywords = "calistenia|peso corporal|barras|street workout"
-            elif "ciclismo" in main_deporte or "bici" in main_deporte:
-                sport_keywords = "ciclismo|bicicleta|rodillo|bici"
+        # Helper para keywords de deporte (usado para queries de deporte usuario)
+        def get_sport_keywords(sport_name):
+            if not sport_name: return None
+            if "natacion" in sport_name or "natación" in sport_name or "swim" in sport_name:
+                return "natacion|natación|piscina|nado|nadar|agua|swim"
+            elif "gimnasio" in sport_name or "gym" in sport_name or "pesas" in sport_name or "crossfit" in sport_name:
+                return "gimnasio|gym|pesas|musculación|fuerza|crossfit"
+            elif "atletismo" in sport_name or "running" in sport_name or "correr" in sport_name:
+                return "atletismo|carrera|running|pista|series|fondo"
+            elif "calistenia" in sport_name:
+                return "calistenia|peso corporal|barras|street workout"
+            elif "ciclismo" in sport_name or "bici" in sport_name:
+                return "ciclismo|bicicleta|rodillo|bici"
+            return None
 
-        # ---------------------- 2. QUERY BASE (SEGURIDAD) ---------------------
+        user_sport_keywords = get_sport_keywords(main_deporte)
+
+        # ---------------------- 2. QUERY BASE (ENTORNO/SEGURIDAD) ---------------------
         base_query: Dict[str, Any] = {}
+        
+        # Filtro "Sin Material" estricto (Case insensitive "ningun")
+        filter_no_material = {
+            "material_utilizado": {
+                "$regex": "ningun", # matches "Ninguno", "ninguno", "Ningún", etc.
+                "$options": "i"
+            }
+        }
 
-        if not has_facilities:
-            # Sin instalaciones: evitar máquinas y pesas pesadas, etc.
+        if mode_no_equipment:
+            # MODO 1: Sin equipamiento -> Solo material "Ninguno" y evitar instalaciones
+            base_query["$and"] = [
+                filter_no_material,
+                {
+                    "superficie": {
+                        "$not": {
+                            "$regex": "Piscina|Sala de pesas|Gimnasio|Pista",
+                            "$options": "i",
+                        }
+                    }
+                }
+            ]
+        
+        elif mode_home_with_equipment:
+            # MODO 2: Casa con material -> Evitar máquinas grandes de gym
             base_query["$and"] = [
                 {
                     "material_utilizado": {
                         "$not": {
-                            "$regex": "Máquina|Prensa|Barra olímpica|Polea|Multipower",
+                            "$regex": "Máquina|Prensa|Barra olímpica|Polea|Multipower|Remo",
                             "$options": "i",
                         }
                     }
@@ -93,269 +140,190 @@ class SmartBreathingAI:
                 {
                     "superficie": {
                         "$not": {
-                            "$regex": "Sala de pesas|Gimnasio",
+                            "$regex": "Piscina|Sala de pesas|Pista", # Gimnasio NO se excluye de superficie aquí para permitir deporte="gimnasio" adaptable
                             "$options": "i",
                         }
                     }
-                },
+                }
             ]
+        
+        else:
+            # MODO 3: Instalaciones -> Prácticamente libre, solo seguridad básica si aplica
+            pass
 
-        # ----------------- 3. FILTRO DEPORTE / PALABRAS CLAVE -----------------
-        def get_sport_query_part():
-            """
-            Construye la parte del filtro que prioriza el deporte del usuario.
+        # ----------------- 3. LÓGICA DE PRIORIDAD DE DEPORTE Y FUERZA -----------------
+        routine_type = goals[0].lower() if goals else "mixto"
+        
+        # Determinar prioridades de deporte
+        # Lista de (nombre_deporte, keywords) en orden de prioridad
+        sport_priorities = []
 
-            - Primero intenta 'deporte' == sport_pref del usuario.
-            - También usa keywords en modalidad/superficie/tags/ejercicio.
-            """
-            conditions = []
+        # Regla: Si es Fuerza + (Instalaciones o CasaConEquip), prioridad 1 = Gimnasio
+        force_gym_priority = (routine_type == "fuerza" and (mode_facilities or mode_home_with_equipment))
 
+        if force_gym_priority:
+            # Prioridad 1: Gimnasio
+            sport_priorities.append(("gimnasio", get_sport_keywords("gimnasio")))
+            # Prioridad 2: Deporte del usuario (si no es gimnasio, para no repetir)
+            if main_deporte and "gimnasio" not in main_deporte and "gym" not in main_deporte:
+                sport_priorities.append((main_deporte, user_sport_keywords))
+        else:
+            # Comportamiento estándar: Prioridad 1 = Deporte Usuario
             if main_deporte:
-                # Campo 'deporte' en la colección Ejercicios (natacion, gimnasio, atletismo, mixto…)
-                conditions.append(
-                    {"deporte": {"$regex": main_deporte, "$options": "i"}}
-                )
-
-            if sport_keywords:
-                conditions.extend(
-                    [
-                        {"modalidad": {"$regex": sport_keywords, "$options": "i"}},
-                        {"superficie": {"$regex": sport_keywords, "$options": "i"}},
-                        {"tags_ia": {"$regex": sport_keywords, "$options": "i"}},
-                        {"ejercicio": {"$regex": sport_keywords, "$options": "i"}},
-                    ]
-                )
-
-            if not conditions:
-                return {}
-
+                sport_priorities.append((main_deporte, user_sport_keywords))
+        
+        # Helper para construir query de un deporte específico
+        def get_single_sport_query(s_name, s_keywords):
+            conditions = []
+            if s_name:
+                conditions.append({"deporte": {"$regex": s_name, "$options": "i"}})
+            if s_keywords:
+                conditions.extend([
+                    {"modalidad": {"$regex": s_keywords, "$options": "i"}},
+                    {"superficie": {"$regex": s_keywords, "$options": "i"}},
+                    {"tags_ia": {"$regex": s_keywords, "$options": "i"}},
+                    {"ejercicio": {"$regex": s_keywords, "$options": "i"}},
+                ])
+            if not conditions: return {}
             return {"$or": conditions}
 
         # ------------------ 4. FILTRO POR OBJETIVO (GOALS) --------------------
-        routine_type = goals[0].lower() if goals else "mixto"
-
         def get_goal_query_part(rtype: str) -> Dict[str, Any]:
             q: Dict[str, Any] = {}
             if rtype == "aerobico":
                 q["$or"] = [
-                    {
-                        "objetivo_fisiológico": {
-                            "$regex": "Aeróbico|Resistencia",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "tags_ia": {
-                            "$regex": "cardio|aeróbico|resistencia|fondo",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "objetivo_entrenamiento": {
-                            "$regex": "Resistencia",
-                            "$options": "i",
-                        }
-                    },
+                    {"objetivo_fisiológico": {"$regex": "Aeróbico|Resistencia", "$options": "i"}},
+                    {"tags_ia": {"$regex": "cardio|aeróbico|resistencia|fondo", "$options": "i"}},
+                    {"objetivo_entrenamiento": {"$regex": "Resistencia", "$options": "i"}},
                 ]
             elif rtype == "anaerobico":
                 q["$or"] = [
-                    {
-                        "objetivo_fisiológico": {
-                            "$regex": "Anaeróbico",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "tags_ia": {
-                            "$regex": "sprint|potencia|anaeróbico|hiit",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "objetivo_entrenamiento": {
-                            "$regex": "Potencia|Velocidad",
-                            "$options": "i",
-                        }
-                    },
+                    {"objetivo_fisiológico": {"$regex": "Anaeróbico", "$options": "i"}},
+                    {"tags_ia": {"$regex": "sprint|potencia|anaeróbico|hiit", "$options": "i"}},
+                    {"objetivo_entrenamiento": {"$regex": "Potencia|Velocidad", "$options": "i"}},
                 ]
             elif rtype == "fuerza":
                 q["$or"] = [
-                    {
-                        "objetivo_entrenamiento": {
-                            "$regex": "Fuerza|Hipertrofia|Tono",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "tags_ia": {
-                            "$regex": "fuerza|pesas|musculación",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "modalidad": {
-                            "$regex": "Gimnasio|Calistenia",
-                            "$options": "i",
-                        }
-                    },
+                    {"objetivo_entrenamiento": {"$regex": "Fuerza|Hipertrofia|Tono", "$options": "i"}},
+                    {"tags_ia": {"$regex": "fuerza|pesas|musculación", "$options": "i"}},
+                    {"modalidad": {"$regex": "Gimnasio|Calistenia", "$options": "i"}},
                 ]
             elif rtype == "respiracion":
                 q["$or"] = [
-                    {
-                        "tags_ia": {
-                            "$regex": "respiración|relajación|apnea",
-                            "$options": "i",
-                        }
-                    },
-                    {
-                        "objetivo_entrenamiento": {
-                            "$regex": "Respiración|Control",
-                            "$options": "i",
-                        }
-                    },
+                    {"tags_ia": {"$regex": "respiración|relajación|apnea", "$options": "i"}},
+                    {"objetivo_entrenamiento": {"$regex": "Respiración|Control", "$options": "i"}},
                 ]
             return q
 
-        # Filtros de nivel e intensidad
-        c_level = {
-            "nivel_detallado": {
-                # 'intermedio', 'principiante', 'avanzado' en la DB
-                "$regex": target_level,
-                "$options": "i",
-            }
-        }
-        c_intensity = {
-            "intensidad_relativa": {
-                # 'Bajo', 'Moderado', 'Exigente' en la DB
-                "$regex": target_intensity,
-                "$options": "i",
-            }
-        }
+        c_level = {"nivel_detallado": {"$regex": target_level, "$options": "i"}}
+        c_intensity = {"intensidad_relativa": {"$regex": target_intensity, "$options": "i"}}
 
         # ------------------ 5. ESTRATEGIA DE BÚSQUEDA POR BLOQUE --------------
         def fetch_block_exercises(block_regex: str, limit: int = 10, is_main: bool = False) -> List[Dict]:
             """
-            Devuelve hasta 'limit' ejercicios para un tipo de bloque (Calentamiento, Principal, etc.)
-            Priorizando SIEMPRE el deporte del usuario; luego, si no hay nada, abre a otros deportes.
+            Devuelve ejercicios siguiendo la cascada de prioridades:
+            1. Deporte Prioritario (si aplica)
+            2. Deporte Usuario (si diferente)
+            3. Fallback General (relleno seguro)
             """
-            sport_filter = get_sport_query_part()
             goal_filter = get_goal_query_part(routine_type) if is_main and routine_type != "mixto" else {}
 
-            def build_steps(prefer_sport: bool):
-                """
-                Construye las distintas "capas" de filtros para ir relajando condiciones.
-                Si prefer_sport=True, incluye el filtro de deporte; si False, no lo incluye.
-                """
-                steps_local = []
+            # Definimos "Estrategias" de búsqueda
+            # Cada estrategia es un filtro base sobre el cual aplicamos relaxations (Goal, Int, Level)
+            strategies = []
 
-                # Base: tipo_bloque + seguridad/equipamiento
-                q_base: Dict[str, Any] = base_query.copy()
-                if "$and" not in q_base:
-                    q_base["$and"] = []
-                q_base["$and"].append(
-                    {"tipo_bloque": {"$regex": block_regex, "$options": "i"}}
-                )
+            # A) Estrategias basadas en Deporte(s) Prioritario(s)
+            for s_name, s_kw in sport_priorities:
+                s_query = get_single_sport_query(s_name, s_kw)
+                strategies.append((f"Sport: {s_name}", s_query, False)) # False = no es fallback "sin material" forzado
 
-                def add_if(condition: Dict[str, Any]):
-                    if condition:
-                        q_base["$and"].append(condition)
+            # B) Estrategia de Fallback: Sin Equipamiento (Safety Net)
+            # Especialmente útil en Instalaciones/CasaConMaterial cuando falta el deporte principal
+            if mode_facilities or mode_home_with_equipment:
+                 strategies.append(("Fallback: No Equip", filter_no_material, True))
 
-                # PASO 1: deporte + nivel + intensidad + objetivo
-                q1 = {"$and": list(q_base["$and"])}
-                if prefer_sport and sport_filter:
-                    q1["$and"].append(sport_filter)
-                q1["$and"].append(c_level)
-                q1["$and"].append(c_intensity)
-                if goal_filter:
-                    q1["$and"].append(goal_filter)
-                steps_local.append(("Strict: sport+level+int+goal", q1))
+            # Si estamos en modo "no equipment", la base_query ya fuerza "sin material", 
+            # así que las estrategias de deporte de arriba ya están filtradas.
+            # Pero si no hubiera matches por deporte, podríamos querer buscar "cualquier cosa sin material".
+            # Sin embargo, si el deporte del usuario es X y no hay ejercicios de X sin material, 
+            # ¿queremos darle ejercicios Y sin material? Sí, como último recurso.
+            if mode_no_equipment:
+                 # Añadimos una estrategia genérica que NO filtra por deporte, solo base_query (que ya es "sin material")
+                 strategies.append(("Fallback: Generic No Equip", {}, True))
 
-                # PASO 2: deporte + nivel + intensidad (sin objetivo)
-                q2 = {"$and": list(q_base["$and"])}
-                if prefer_sport and sport_filter:
-                    q2["$and"].append(sport_filter)
-                q2["$and"].append(c_level)
-                q2["$and"].append(c_intensity)
-                steps_local.append(("Relax goal: sport+level+int", q2))
 
-                # PASO 3: deporte + nivel (sin intensidad ni objetivo)
-                q3 = {"$and": list(q_base["$and"])}
-                if prefer_sport and sport_filter:
-                    q3["$and"].append(sport_filter)
-                q3["$and"].append(c_level)
-                steps_local.append(("Relax int+goal: sport+level", q3))
-
-                # PASO 4: solo deporte (sin nivel, sin intensidad, sin objetivo)
-                q4 = {"$and": list(q_base["$and"])}
-                if prefer_sport and sport_filter:
-                    q4["$and"].append(sport_filter)
-                steps_local.append(("Only sport", q4))
-
-                # PASO 5 (solo cuando prefer_sport=False): sin deporte, con nivel
-                if not prefer_sport:
-                    q5 = {"$and": list(q_base["$and"])}
-                    q5["$and"].append(c_level)
-                    if goal_filter:
-                        q5["$and"].append(goal_filter)
-                    steps_local.append(("Fallback no sport: level(+goal)", q5))
-
-                return steps_local
-
-            seen_ids = set()
             results: List[Dict] = []
+            seen_ids = set()
 
-            # 1º: Intentar SIEMPRE con el deporte del usuario
-            for prefer_sport in [True, False]:
-                steps = build_steps(prefer_sport=prefer_sport)
+            for strat_name, strat_filter, is_fallback in strategies:
+                if len(results) >= limit: break
+                
+                # Construimos los pasos de relajación para esta estrategia
+                def build_steps_for_strat():
+                    steps_local = []
+                    
+                    # Base de esta iteración: base_query global + filtro de la estrategia
+                    q_base_iter = base_query.copy()
+                    if "$and" not in q_base_iter: q_base_iter["$and"] = []
+                    
+                    q_base_iter["$and"].append({"tipo_bloque": {"$regex": block_regex, "$options": "i"}})
+                    if strat_filter:
+                        q_base_iter["$and"].append(strat_filter)
+
+                    # Pasos de relajación estándar
+                    # 1. Todo: Level + Int + Goal
+                    q1 = {"$and": list(q_base_iter["$and"])}
+                    q1["$and"].append(c_level)
+                    q1["$and"].append(c_intensity)
+                    if goal_filter: q1["$and"].append(goal_filter)
+                    steps_local.append(("Strict", q1))
+
+                    # 2. Relax Goal: Level + Int
+                    q2 = {"$and": list(q_base_iter["$and"])}
+                    q2["$and"].append(c_level)
+                    q2["$and"].append(c_intensity)
+                    steps_local.append(("Relax Goal", q2))
+
+                    # 3. Relax Int: Level
+                    q3 = {"$and": list(q_base_iter["$and"])}
+                    q3["$and"].append(c_level)
+                    if goal_filter and is_fallback: # En fallback a veces interesa mantener objetivo
+                         q3["$and"].append(goal_filter)
+                    steps_local.append(("Relax Int", q3))
+
+                    # 4. Solo filtro base (Sport/Fallback)
+                    q4 = {"$and": list(q_base_iter["$and"])}
+                    # Si es fallback puro (sin deporte), intentar mantener al menos el objetivo
+                    if is_fallback and goal_filter:
+                         q4["$and"].append(goal_filter)
+                    steps_local.append(("Base Strat", q4))
+                    
+                    return steps_local
+
+                steps = build_steps_for_strat()
 
                 for step_name, query in steps:
-                    if len(results) >= limit:
-                        break
-
-                    # Limpiar $and vacío
-                    if not query.get("$and"):
-                        query.pop("$and", None)
+                    if len(results) >= limit: break
+                    
+                    # Clean empty $and
+                    if not query.get("$and"): query.pop("$and", None)
 
                     try:
-                        logger.debug(
-                            f"[Fetch {block_regex}] Step '{step_name}' "
-                            f"prefer_sport={prefer_sport} - Filter: {query}"
-                        )
-                        found = list(
-                            self.db.Ejercicios.find(query).limit(limit * 3)
-                        )
-
+                        logger.debug(f"[Fetch {block_regex}] Strat '{strat_name}' - Step '{step_name}'")
+                        found = list(self.db.Ejercicios.find(query).limit(limit * 3))
+                        
                         valid_batch = []
                         for ex in found:
                             ex_id = str(ex.get("_id"))
-                            if ex_id in seen_ids:
-                                continue
-                            if not self._is_safe(user_profile, ex):
-                                continue
+                            if ex_id in seen_ids: continue
+                            if not self._is_safe(user_profile, ex): continue
                             valid_batch.append(ex)
                             seen_ids.add(ex_id)
-
+                        
                         if valid_batch:
-                            logger.info(
-                                f"[Fetch {block_regex}] Step '{step_name}' "
-                                f"prefer_sport={prefer_sport} -> {len(valid_batch)} exercises"
-                            )
                             results.extend(valid_batch)
-                        else:
-                            logger.debug(
-                                f"[Fetch {block_regex}] Step '{step_name}' "
-                                f"prefer_sport={prefer_sport} -> 0 exercises"
-                            )
                     except Exception as e:
-                        logger.error(
-                            f"Error executing query step '{step_name}' "
-                            f"prefer_sport={prefer_sport}: {e}"
-                        )
-
-                if results:
-                    # Si ya hemos encontrado algo con prefer_sport=True, no
-                    # tiene sentido seguir; si prefer_sport=False, también salimos.
-                    break
+                        logger.error(f"Error in query: {e}")
 
             return results[:limit]
 
