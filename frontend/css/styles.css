@@ -1,0 +1,161 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --bg-gradient-light: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%);
+    --bg-gradient-vivid: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+    --text-primary: #444aaf;
+    --text-dark: #2d3748;
+    --white: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
+    --radius-lg: 24px;
+    --radius-md: 12px;
+}
+
+body {
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text-dark);
+    /* Default background, can be overridden */
+    background: var(--bg-gradient-light);
+    background-attachment: fixed;
+}
+
+/* Common Container */
+.container-modern {
+    max-width: 1120px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 40px;
+    backdrop-filter: blur(10px);
+}
+
+.card-centered {
+    max-width: 480px;
+    margin: 60px auto;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 40px;
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Typography */
+h1 {
+    color: var(--text-primary);
+    font-weight: 800;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+select {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 2px solid #e2e8f0;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: #f8fafc;
+    box-sizing: border-box; /* Fix sizing issues */
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Buttons */
+.btn-primary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 30px;
+    text-decoration: none; /* For link buttons */
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.error-message {
+    color: #e53e3e;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stepper Styles */
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.step {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #cbd5e0;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px;
+    transition: background 0.3s;
+}
+
+.step.active {
+    background: #667eea;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+}
+
+.bar {
+    height: 4px;
+    width: 40px;
+    background: #e2e8f0;
+    border-radius: 2px;
+}

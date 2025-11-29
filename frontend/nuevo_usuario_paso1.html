@@ -5,111 +5,27 @@
   <title>SmartBreathing - Datos del perfil</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
+
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/styles.css">
+
   <style>
-    * { box-sizing: border-box; }
+    /* Specific overrides if needed, minimal */
     body {
-      font-family:'Poppins','Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-      min-height:100vh;
-      margin:0;
-      background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
-      background-size: 200% 200%;
-      animation: gradientMove 12s ease-in-out infinite;
+        background: var(--bg-gradient-vivid);
+        background-size: 200% 200%;
+        animation: gradientMove 12s ease-in-out infinite;
     }
     @keyframes gradientMove {
       0% {background-position: 0% 50%;}
       50% {background-position: 100% 50%;}
       100% {background-position: 0% 50%;}
     }
-    @keyframes fadeInUp {
-      0% {opacity:0; transform:translateY(36px);}
-      100% {opacity:1; transform:translateY(0);}
-    }
-    .form-container {
-      max-width:440px;
-      background:white;
-      border-radius:24px;
-      padding:2.7em 2em 2em 2em;
-      box-shadow:0 10px 40px rgba(70,82,210,0.14), 0 1.5px 3px rgba(70,82,210,0.03);
-      margin:56px auto 0 auto;
-      text-align:center;
-      position:relative;
-      animation: fadeInUp 0.88s cubic-bezier(.43,.06,.58,1.02);
-    }
-    .stepper { display:flex; align-items:center; justify-content:center; margin-bottom:18px; padding-top:10px;}
-    .step {
-      width: 32px; height: 32px; border-radius: 50%; background: #bb9cf5;
-      color: #fff; font-weight:700; font-size:1.13em; display:flex; align-items:center; justify-content:center;
-      margin:0 8px; transition:background 0.3s;
-      opacity:0.95;
-    }
-    .step.active { background: #7678ed; color:#fff; opacity:1;}
-    .bar {height: 5px; width:30px; background: #c8b6e2; border-radius:2px;}
-    .form-container h1 {
-      font-size:2.15rem;
-      color:#667eea;
-      margin-bottom:13px;
-      font-weight:800;
-      letter-spacing: 0.4px;
-      display:flex; align-items:center; justify-content:center; gap:0.6em;
-    }
-    .user-form label {
-      display:block;
-      margin:14px 0 6px 0;
-      font-size:1.09rem;
-      color:#496;
-      opacity:0.93;
-      text-align:left;
-      font-weight:600;
-      letter-spacing:0.05em;
-    }
-    .user-input {
-      width:98%;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #c0c3ff;
-      font-size:1.15rem;
-      margin-bottom:8px;
-      background:#f6f8ff;
-      transition:border 0.21s;
-      box-shadow: 0 1.5px 9px rgba(90,90,200,0.06);
-    }
-    .user-input:focus {
-      border:1.5px solid #667eea;
-      outline: none;
-      background:#eef2ff;
-    }
-    .btn-user {
-      display:block;
-      width:100%;
-      margin:24px 0 0 0;
-      padding:16px;
-      font-size:1.18rem;
-      font-weight:700;
-      border-radius:28px;
-      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color:white;
-      border:none;
-      cursor:pointer;
-      box-shadow:0 2px 12px #7865e40c;
-      transition:box-shadow 0.23s, transform 0.23s, background 0.29s;
-    }
-    .btn-user:hover {
-      box-shadow:0 8px 32px #7865e43f;
-      background:linear-gradient(122deg, #8463e4 0%, #666eaac6 100%);
-      transform:translateY(-2px);
-    }
-    .mensaje {
-      margin-top:22px;
-      font-size:1.10rem;
-      font-weight:600;
-      color: #F44336;
-      min-height:1.2em;
-    }
-    .icono-campo {
-      margin-right:8px;
-      color:#8a6be8;
-      font-size:1.05em;
-    }
+    .icono-campo { margin-right: 8px; color: #667eea; }
+
+    /* Toast styles specific to this page flow */
     .toast {
       visibility: hidden;
       min-width: 220px;
@@ -119,26 +35,23 @@
       border-radius: 6px;
       padding: 1.2em;
       position: fixed;
-      z-index: 100;
+      z-index: 2000;
       left: 50%;
-      bottom: 18px;
+      bottom: 30px;
       transform: translateX(-50%);
       transition: opacity 0.4s;
       opacity: 0;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    .toast.show {
-      visibility: visible;
-      opacity: 1;
-    }
-    @media (max-width:600px) {
-      .form-container { padding:1.1em 0.6em 1.4em 0.6em; max-width:97vw; }
-      .step {width:24px;height:24px;font-size:0.96em;}
-      h1 {font-size:1.3em;}
-    }
+    .toast.show { visibility: visible; opacity: 1; }
   </style>
 </head>
 <body>
-  <div class="form-container">
+
+  <!-- Nav script injected -->
+  <script src="js/nav.js"></script>
+
+  <div class="card-centered" style="margin-top: 60px;"> <!-- Margin top for aesthetics below nav -->
     <div class="stepper">
       <div class="step active">1</div>
       <div class="bar"></div>
@@ -148,50 +61,69 @@
       <i class="fas fa-id-card-alt icono-campo"></i>
       Datos del perfil
     </h1>
-    <form class="user-form" onsubmit="irAPersonalizacion(event)">
+    <form class="user-form" onsubmit="irAPersonalizacion(event)" novalidate>
       <label for="nombre"><i class="fas fa-user icono-campo"></i>Nombre</label>
-      <input class="user-input" type="text" id="nombre" required>
+      <input type="text" id="nombre" required placeholder="Ej. Juan">
+
       <label for="apellido"><i class="fas fa-user icono-campo"></i>Apellido</label>
-      <input class="user-input" type="text" id="apellido" required>
-      <label for="codigo"><i class="fas fa-key icono-campo"></i>Código</label>
-      <input class="user-input" type="text" id="codigo" required>
+      <input type="text" id="apellido" required placeholder="Ej. Pérez">
+
+      <label for="codigo"><i class="fas fa-key icono-campo"></i>Código (PIN 4 dígitos)</label>
+      <!-- STRICT 4-DIGIT PIN INPUT -->
+      <input type="text" id="codigo" required maxlength="4" placeholder="0000" inputmode="numeric">
+
       <label for="condiciones"><i class="fas fa-diagnoses icono-campo"></i>¿Condiciones limitantes?</label>
-      <select class="user-input" id="condiciones" required>
+      <select id="condiciones" required>
         <option value="">Selecciona</option>
         <option value="si">Sí</option>
         <option value="no">No</option>
       </select>
-      <!-- CAMPO GENERO AÑADIDO -->
+
       <label for="genero"><i class="fas fa-venus-mars icono-campo"></i>Género</label>
-      <select class="user-input" id="genero" required>
+      <select id="genero" required>
         <option value="">Selecciona</option>
         <option value="hombre">Masculino</option>
         <option value="mujer">Femenino</option>
       </select>
-      <!-- FIN CAMPO GENERO -->
+
       <label for="edad"><i class="fas fa-birthday-cake icono-campo"></i>Edad</label>
-      <input class="user-input" type="number" id="edad" required>
+      <input type="number" id="edad" required min="10" max="100">
+
       <label for="peso"><i class="fas fa-weight icono-campo"></i>Peso (kg)</label>
-      <input class="user-input" type="number" step="0.1" id="peso" required>
-      <button type="submit" class="btn-user"><i class="fas fa-arrow-right"></i> Siguiente</button>
+      <input type="number" step="0.1" id="peso" required min="30" max="300">
+
+      <button type="submit" class="btn-primary"><i class="fas fa-arrow-right"></i> Siguiente</button>
     </form>
-    <div class="mensaje" id="mensaje-usuario"></div>
+    <div class="mensaje error-message" id="mensaje-usuario"></div>
   </div>
+
   <div id="toast" class="toast"></div>
+
   <script>
     function showToast(msg, color="#684CB2") {
       let t = document.getElementById("toast");
       t.textContent = msg;
       t.style.background = color;
       t.className = "toast show";
-      setTimeout(() => t.className = "toast", 2000);
+      setTimeout(() => t.className = "toast", 3000);
     }
+
     function validaCapital(palabra) {
       const trimmed = palabra.trim();
       if (trimmed.length === 0) return false;
       const primer = trimmed[0];
       return (primer === primer.toUpperCase() && primer !== primer.toLowerCase());
     }
+
+    // --- PIN VALIDATION LOGIC ---
+    const codigoInput = document.getElementById('codigo');
+
+    // Real-time validation: Allow only numbers
+    codigoInput.addEventListener('input', function(e) {
+      // Remove any non-digit character
+      this.value = this.value.replace(/\D/g, '');
+    });
+
     function irAPersonalizacion(event) {
       event.preventDefault();
       const nombre = document.getElementById('nombre').value.trim();
@@ -201,19 +133,32 @@
       const genero = document.getElementById('genero').value;
       const edad = document.getElementById('edad').value;
       const peso = document.getElementById('peso').value;
+
+      // Reset messages
+      const msgBox = document.getElementById('mensaje-usuario');
+      msgBox.textContent = "";
+
       if (!nombre || !apellido || !codigo || !condiciones || !genero || !edad || !peso) {
         showToast("Por favor, rellena todos los campos.", "#e13333");
         return;
       }
+
+      // PIN Validation on Submit
+      if (!/^\d{4}$/.test(codigo)) {
+         msgBox.textContent = "El código debe ser un PIN de exactamente 4 dígitos numéricos.";
+         showToast("El código debe ser un PIN de 4 dígitos numéricos.", "#e13333");
+         return;
+      }
+
       if (!validaCapital(nombre)) {
-        showToast("El nombre debe empezar obligatoriamente con una letra mayúscula. Ejemplo: Juan", "#e13333");
+        showToast("El nombre debe empezar obligatoriamente con una letra mayúscula.", "#e13333");
         return;
       }
       if (!validaCapital(apellido)) {
-        showToast("El apellido debe empezar obligatoriamente con una letra mayúscula. Ejemplo: García", "#e13333");
+        showToast("El apellido debe empezar obligatoriamente con una letra mayúscula.", "#e13333");
         return;
       }
-      // Ahora incluimos el género en datos
+
       const datos = {
         nombre,
         apellido,
@@ -229,21 +174,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
