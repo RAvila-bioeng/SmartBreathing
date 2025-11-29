@@ -26,7 +26,7 @@ DB_NAME = "SmartBreathing"
 COLLECTION_NAME = "Ejercicios"  # respeta el nombre tal como está en Mongo
 
 # Ruta ABSOLUTA a tu Excel
-EXCEL_PATH = r"C:\Users\rober\OneDrive\Escritorio\UFV\Cuarto\Prototype\database_unificado_con_deporte.xlsx"
+EXCEL_PATH = r"C:\Users\rober\OneDrive\Escritorio\UFV\Cuarto\Prototype\database_unificado_con_deporte_casa.xlsx"
 SHEET_NAME = "Sheet1"  # cámbialo si tu hoja se llama distinto
 
 def nan_to_none(value):

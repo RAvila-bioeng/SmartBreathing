@@ -4,82 +4,170 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Iniciar Sesión - SmartBreathing</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
+  
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/styles.css">
+  
   <style>
-    body {
-      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-container {
-      background: rgba(255,255,255,0.97);
-      border-radius: 22px;
-      box-shadow: 0 10px 40px rgba(70,82,210,0.16),0 2px 4px rgba(70,82,210,0.06);
-      padding: 2.7em 2.2em 2em 2.2em;
-      min-width: 340px;
-      max-width: 98vw;
-      animation: fadeInUp 0.7s cubic-bezier(.48,.07,.63,.9);
-      text-align: center;
-    }
-    @keyframes fadeInUp { from {opacity:0; transform:translateY(32px);} to{opacity:1; transform:translateY(0);} }
-    h1 { color:#6578ed; font-weight:900; font-size:1.7em; margin-bottom:28px; }
-    label { display:block; text-align:left; margin-bottom:9px; color:#4a469a; font-weight:700;}
-    .login-input {
-      width:100%; padding:14px;
-      font-size:1.1em; border-radius:12px; border:1.2px solid #bbc6f8;
-      margin-bottom:22px; margin-top:3px;
-      background: #f5f6fa;
-      transition: border 0.18s;
-    }
-    .login-input:focus {border:1.6px solid #6578ed; outline:none;}
-    .login-btn {
-      width:100%;
-      padding:15px;
-      border:none;
-      border-radius:25px;
-      font-size:1.2em;
-      font-weight:800;
-      background: linear-gradient(92deg, #7a5ff7 0%, #7687f8 100%);
-      color:white; cursor:pointer;
-      box-shadow: 0 3px 18px #87a0df24;
-      margin-top:16px;
-      transition: background 0.21s;
-    }
-    .login-btn:hover {
-      background: linear-gradient(102deg,#764ba2 0%,#667eea 100%);
-    }
-    .error-message {
-      color:#f44336;
-      font-weight:700;
-      margin-top: 18px;
-      min-height: 1.2em;
-      font-size:1em;
-    }
+      body {
+          display: block;
+          background: var(--bg-gradient-light);
+          padding-top: calc(var(--nav-height) + 20px);
+      }
+
+      .login-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: calc(100vh - var(--nav-height) - 40px);
+          padding: 20px;
+      }
+
+      /* Cabecera del card */
+      .login-header {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 24px;
+      }
+
+      .login-icon {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          box-shadow: 0 10px 22px rgba(102,126,234,0.45);
+      }
+
+      .login-icon i {
+          font-size: 1.4rem;
+      }
+
+      .login-header h1 {
+          margin: 0;
+          font-size: 1.8rem;
+          color: var(--text-primary);
+      }
+
+      .login-subtitle {
+          margin: 0;
+          font-size: 0.95rem;
+          color: #6b7280;
+      }
+
+      /* Inputs ligeramente más compactos en esta página */
+      #loginForm input {
+          margin-top: 4px;
+      }
+
+      /* Mensaje de error con un poco más de aire */
+      .error-message {
+          margin-top: 14px;
+          text-align: center;
+      }
+
+      /* Texto bajo el botón para ir a registro */
+      .login-alt {
+          margin-top: 18px;
+          font-size: 0.9rem;
+          color: #6b7280;
+      }
+
+      .login-alt a {
+          font-weight: 600;
+          color: #667eea;
+          text-decoration: none;
+          position: relative;
+          transition: color 0.2s ease;
+      }
+
+      .login-alt a::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: -2px;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(90deg, #667eea, #764ba2);
+          transform-origin: left;
+          transform: scaleX(0);
+          transition: transform 0.2s ease;
+      }
+
+      .login-alt a:hover {
+          color: #4c51bf;
+      }
+
+      .login-alt a:hover::after {
+          transform: scaleX(1);
+      }
+
+      /* Placeholders algo más suaves */
+      input::placeholder {
+          color: #a0aec0;
+          opacity: 0.95;
+      }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <h1><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h1>
-    <form id="loginForm" autocomplete="off">
-      <label for="nombre">Nombre</label>
-      <input class="login-input" type="text" id="nombre" name="nombre" required maxlength="30" autocomplete="off" />
-      <label for="apellido">Apellido</label>
-      <input class="login-input" type="text" id="apellido" name="apellido" required maxlength="30" autocomplete="off" />
-      <label for="codigo">Código (4 dígitos)</label>
-      <input class="login-input" type="text" id="codigo" name="codigo" required maxlength="4" minlength="4" autocomplete="off" />
-      <button class="login-btn" type="submit">Entrar</button>
-      <div class="error-message" id="errorMsg"></div>
-    </form>
+
+  <!-- Nav script -->
+  <script src="js/nav.js"></script>
+
+  <div class="login-wrapper">
+      <div class="card-centered" style="margin: 0; min-width: 340px;">
+        
+        <div class="login-header">
+          <div class="login-icon">
+            <i class="fas fa-sign-in-alt"></i>
+          </div>
+          <h1>Iniciar Sesión</h1>
+          <p class="login-subtitle">Accede a tu panel de monitorización</p>
+        </div>
+
+        <form id="loginForm" autocomplete="off" novalidate>
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" name="nombre" required maxlength="30" autocomplete="off" placeholder="Tu Nombre"/>
+          
+          <label for="apellido">Apellido</label>
+          <input type="text" id="apellido" name="apellido" required maxlength="30" autocomplete="off" placeholder="Tu Apellido"/>
+          
+          <label for="codigo">Código (4 dígitos)</label>
+          <!-- STRICT 4-DIGIT PIN INPUT -->
+          <input type="text" id="codigo" name="codigo" required maxlength="4" autocomplete="off" placeholder="0000" inputmode="numeric"/>
+          
+          <button class="btn-primary" type="submit">Entrar</button>
+          <div class="error-message" id="errorMsg"></div>
+        </form>
+
+        <p class="login-alt">
+          ¿Aún no tienes usuario?
+          <a href="nuevo_usuario_paso1.html">Crear nuevo usuario</a>
+        </p>
+      </div>
   </div>
+
   <script>
     function validaCapital(nombre) {
       return /^[A-Z][a-záéíóúüñ]+$/.test(nombre);
     }
+
+    // --- PIN VALIDATION LOGIC ---
+    const codigoInput = document.getElementById('codigo');
+    
+    // Real-time validation: Allow only numbers
+    codigoInput.addEventListener('input', function(e) {
+      this.value = this.value.replace(/\D/g, '');
+    });
 
     document.getElementById('loginForm').onsubmit = async function(e){
       e.preventDefault();
@@ -91,15 +179,17 @@
 
       // Validaciones frontend
       if (!validaCapital(nombre)) {
-        errorMsg.textContent = "El nombre debe empezar por mayúscula y resto minúsculas.";
+        errorMsg.textContent = "El nombre debe empezar por mayúscula.";
         return;
       }
       if (!validaCapital(apellido)) {
-        errorMsg.textContent = "El apellido debe empezar por mayúscula y resto minúsculas.";
+        errorMsg.textContent = "El apellido debe empezar por mayúscula.";
         return;
       }
+      
+      // Strict PIN Validation
       if (!/^\d{4}$/.test(codigo)) {
-        errorMsg.textContent = "El código debe ser un número de 4 cifras.";
+        errorMsg.textContent = "El código debe ser un PIN de 4 dígitos numéricos.";
         return;
       }
 
@@ -126,6 +216,3 @@
   </script>
 </body>
 </html>
-
-
-

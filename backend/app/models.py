@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from bson import ObjectId
 from pydantic_core import core_schema
 
@@ -51,6 +51,14 @@ class UserCreate(BaseModel):
     nombre: str
     apellido: str
     codigo: str
+
+    @field_validator('codigo')
+    @classmethod
+    def validate_codigo(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 4:
+            raise ValueError('El código debe ser un PIN de 4 dígitos numéricos')
+        return v
+
     condiciones_limitantes: str
     genero: str
     edad: int

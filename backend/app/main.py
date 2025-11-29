@@ -110,7 +110,7 @@ async def create_new_user(user: UserCreate):
     db = get_database()
     # Se elimina la comprobación de unicidad del código
     new_user_data = user.dict()
-    new_user_data.pop("peso", None)  # El peso se guarda en Mediciones, no aquí
+    # Se mantiene 'peso' en new_user_data para guardarlo también en la colección users
     new_user_data["created_at"] = datetime.utcnow()
     new_user_data["updated_at"] = datetime.utcnow()
     if "genero" not in new_user_data or not new_user_data["genero"]:

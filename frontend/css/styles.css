@@ -1,0 +1,201 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --bg-gradient-light: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%);
+    --bg-gradient-vivid: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+    --text-primary: #444aaf;
+    --text-dark: #2d3748;
+    --white: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.08);
+    --radius-lg: 24px;
+    --radius-md: 12px;
+}
+
+body {
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text-dark);
+    background: var(--bg-gradient-light);
+    background-attachment: fixed;
+    background-size: 200% 200%;
+    animation: subtleGradient 18s ease-in-out infinite;
+}
+
+/* Gradiente animado MUY suave */
+@keyframes subtleGradient {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 0%; }
+}
+
+/* Common Container */
+.container-modern {
+    max-width: 1120px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 40px;
+    backdrop-filter: blur(10px);
+}
+
+.card-centered {
+    max-width: 480px;
+    margin: 60px auto;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 40px;
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+/* “Flotar” al pasar el ratón */
+.card-centered:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+    background: rgba(255,255,255,0.99);
+}
+
+/* Typography */
+h1 {
+    color: var(--text-primary);
+    font-weight: 800;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+select {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 2px solid #e2e8f0;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.25s ease;
+    background: #f8fafc;
+    box-sizing: border-box;
+}
+
+input:hover,
+select:hover {
+    border-color: #c3d1ff;
+    background: #fdfdff;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.16);
+}
+
+/* Buttons */
+.btn-primary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    margin-top: 30px;
+    text-decoration: none;
+}
+
+.btn-primary i {
+    margin-right: 8px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(102, 126, 234, 0.35);
+    filter: brightness(1.04);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.26);
+}
+
+.btn-primary:focus-visible {
+    outline: 2px solid rgba(102,126,234,0.9);
+    outline-offset: 3px;
+}
+
+/* Error messages */
+.error-message {
+    color: #e53e3e;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stepper Styles */
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.step {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #cbd5e0;
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.step.active {
+    background: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    transform: translateY(-1px);
+}
+
+.bar {
+    height: 4px;
+    width: 40px;
+    background: #e2e8f0;
+    border-radius: 2px;
+}

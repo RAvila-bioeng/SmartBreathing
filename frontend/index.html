@@ -7,49 +7,299 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Poppins:400,600,800&display=swap" rel="stylesheet">
+  
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/styles.css">
+
   <style>
-    body { font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: linear-gradient(120deg, #e8eaf6 0%, #d1c4e9 100%); min-height: 100vh; }
-    .container { max-width: 1120px; margin: 24px auto 40px auto; background: rgba(255,255,255,0.96); border-radius: 28px; box-shadow: 0 7px 32px rgba(70,82,210,0.11), 0 1px 2px rgba(70,82,210,0.08); padding: 2.3em 2.1em 2.5em 2.1em; min-height: 90vh; }
-    .header { text-align: center; margin-bottom: 24px; }
-    .header h1 { color: #6066dc; font-weight: 900; font-size: 2.16em; margin-bottom: 5px; margin-top: 5px; letter-spacing: .01em; }
-    .header p { color: #474b6a; font-weight: 600; letter-spacing: .01em; margin-bottom: 8px; margin-top: 0; font-size: 1.19em; }
-    .manual-form { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; margin-bottom: 38px; margin-top: 20px; font-size: 1.09em; background: #f9fafe; padding: 18px 18px 16px 18px; border-radius: 17px; box-shadow: 0 2px 15px #e5e7fe11;}
-    .manual-form label { font-weight: 700; letter-spacing: .01em; color: #434894; margin:0 4px 0 0;}
-    .manual-form input[type="number"] { padding: 7px 9px; font-size: 1.13em; border-radius: 10px; border: 1.2px solid #bbc6f8; outline: none; max-width: 80px; min-width:60px; text-align:right; background: #f5f6fa; margin-right:14px;}
-    .manual-form .co2-row { display: flex; flex-wrap: wrap; align-items: center; gap:8px; width:100%; justify-content: center;margin-top:8px;}
-    .manual-form .co2-row label { margin-right:3px; }
-    .manual-form button { padding: 12px 22px; font-size: 1.18em; border-radius: 14px; border: none; font-weight: bold; color: white; background: linear-gradient(92deg, #7a5ff7 20%, #7687f8 100%); cursor: pointer; margin-left:10px;}
-    .manual-form button:hover { background: linear-gradient(102deg, #764ba2 0%, #667eea 100%);}
-    .success-message { color:#20bb4f; font-weight:700; text-align:center; margin-bottom:1.3em; font-size:1.16em; }
-    .error-message { color:#f44336; font-weight:700; text-align:center; margin-bottom:1.3em; }
-    .metrics-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin: 25px 0 28px 0; }
-    .metric-card { background: #f9fafe; border-radius: 21px; min-width: 211px; min-height: 120px; padding: 15px 20px 17px 20px; box-shadow: 0 1px 16px #8896ee16; text-align: center; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
-    .metric-title { font-size: 1.08em; font-weight: 800; color: #554ab8; margin-bottom: 4px; letter-spacing: .02em; }
-    .metric-value { font-size: 2.05em; font-weight: bold; margin: 5px 0 2px 0; color:#293265; }
-    .metric-unit { position: absolute; right: 13px; top: 9px; color: #8797e8; font-size: 1.01em; font-weight: 800; }
-    .status-indicator { display: inline-block; width: 18px; height: 18px; border-radius: 100%; margin-right: 7px; vertical-align: middle; border: 2px solid #bfc9ec;}
+    /* Fondo animado suave, en línea con el resto */
+    body {
+        background: var(--bg-gradient-light);
+        background-size: 200% 200%;
+        animation: subtleGradient 18s ease-in-out infinite;
+    }
+
+    .dashboard-container { 
+        max-width: 1120px; 
+        margin: 40px auto; 
+        background: var(--card-bg); 
+        border-radius: var(--radius-lg); 
+        box-shadow: var(--shadow-soft); 
+        padding: 40px; 
+        min-height: 90vh; 
+        backdrop-filter: blur(10px);
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .dashboard-container:hover {
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+        transform: translateY(-4px);
+    }
+    
+    .header { 
+        text-align: center; 
+        margin-bottom: 24px; 
+    }
+
+    .header-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin: 0 auto 10px auto;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        box-shadow: 0 12px 26px rgba(102,126,234,0.4);
+    }
+
+    .header-icon i {
+        font-size: 1.6rem;
+    }
+
+    .header h1 { 
+        color: #6066dc; 
+        font-weight: 900; 
+        font-size: 2.1em; 
+        margin-bottom: 5px; 
+        margin-top: 5px; 
+        letter-spacing: .01em; 
+    }
+
+    .header p { 
+        color: #474b6a; 
+        font-weight: 600; 
+        letter-spacing: .01em; 
+        margin-bottom: 8px; 
+        margin-top: 0; 
+        font-size: 1.05em; 
+    }
+    
+    .manual-form { 
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 15px; 
+        justify-content: center; 
+        align-items: center; 
+        margin-bottom: 38px; 
+        margin-top: 20px; 
+        font-size: 1.02em; 
+        background: #f9fafe; 
+        padding: 25px; 
+        border-radius: var(--radius-md); 
+        box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+    }
+
+    .manual-form label { 
+        font-weight: 700; 
+        letter-spacing: .01em; 
+        color: #434894; 
+        margin:0 4px 0 0; 
+    }
+
+    .manual-form input[type="number"] { 
+        padding: 10px; 
+        font-size: 1em; 
+        border-radius: 10px; 
+        border: 1px solid #bbc6f8; 
+        outline: none; 
+        max-width: 80px; 
+        min-width:60px; 
+        text-align:right; 
+        background: #fff; 
+        margin-right:14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .manual-form input[type="number"]:hover {
+        border-color: #8fa2ff;
+        box-shadow: 0 4px 10px rgba(143,162,255,0.25);
+        transform: translateY(-1px);
+    }
+
+    .manual-form .co2-row { 
+        display: flex; 
+        flex-wrap: wrap; 
+        align-items: center; 
+        gap:8px; 
+        width:100%; 
+        justify-content: center;
+        margin-top:15px;
+    }
+
+    .manual-form button { 
+        padding: 12px 22px; 
+        font-size: 1em; 
+        border-radius: 14px; 
+        border: none; 
+        font-weight: bold; 
+        color: white; 
+        background: var(--primary-gradient); 
+        cursor: pointer; 
+        margin-left:10px; 
+        transition: all 0.2s;
+    }
+
+    .manual-form button:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); 
+        filter: brightness(1.05);
+    }
+    
+    .metrics-grid { 
+        display: flex; 
+        flex-wrap: wrap; 
+        gap: 24px; 
+        justify-content: center; 
+        margin: 25px 0 28px 0; 
+    }
+
+    .metric-card { 
+        background: #f9fafe; 
+        border-radius: 21px; 
+        min-width: 211px; 
+        min-height: 120px; 
+        padding: 15px 20px 17px 20px; 
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04); 
+        text-align: center; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        position: relative; 
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .metric-card:hover { 
+        transform: translateY(-4px); 
+        box-shadow: 0 10px 26px rgba(0,0,0,0.08); 
+        background:#ffffff;
+    }
+
+    .metric-title { 
+        font-size: 1.02em; 
+        font-weight: 800; 
+        color: #554ab8; 
+        margin-bottom: 4px; 
+        letter-spacing: .02em; 
+    }
+
+    .metric-title i {
+        margin-right: 6px;
+    }
+
+    .metric-value { 
+        font-size: 2.05em; 
+        font-weight: bold; 
+        margin: 5px 0 2px 0; 
+        color:#293265; 
+    }
+
+    .metric-unit { 
+        position: absolute; 
+        right: 13px; 
+        top: 9px; 
+        color: #8797e8; 
+        font-size: 1.01em; 
+        font-weight: 800; 
+    }
+    
+    .status-indicator { 
+        display: inline-block; 
+        width: 18px; 
+        height: 18px; 
+        border-radius: 100%; 
+        margin-right: 7px; 
+        vertical-align: middle; 
+        border: 2px solid #bfc9ec;
+    }
+
     .status-good {background: #7af77a; border-color: #48e248;}
     .status-warning {background: #FFEA6C; border-color:#f7ca33;}
     .status-danger {background: #f77070; border-color: #e94c4c;}
-    .metric-co2-all { display:flex; flex-direction:column; align-items:center; }
-    .co2-values-row { display:flex; flex-direction:row; justify-content:center; gap:22px;margin-top:10px;}
-    .co2-value-box { font-size: 1.22em; font-weight:700;  background: #ecf1ff; border-radius:9px; box-shadow:0 1.5px 7px #9bb0e42a;margin:0 3px; min-width:81px; padding:7px 11px; color:#444aaf;}
-    .co2-value-label { font-size: 0.98em; color:#6078e0; font-weight:600;}
-    .chart-container { background: #fff; border-radius: 17px; box-shadow: 0 1px 13px #bbbcea10; padding: 19px 22px; margin-bottom: 28px; margin-top: 28px; max-width: 850px; margin-left: auto; margin-right: auto;}
-    .chart-title { font-size:1.14em; font-weight: bold; color:#6066dc; letter-spacing:.01em; margin-bottom: 10px; margin-top: 0; display:flex; align-items:center; gap:7px; }
-    @media (max-width: 1150px){ .metrics-grid{gap:13px;} .co2-values-row{gap:7px;} .metric-card{min-width:120px;font-size:0.92em;} .co2-value-box{min-width:65px;} }
-    @media (max-width: 650px) { .metrics-grid {flex-direction:column; align-items:center;} .container {padding:0.4em 0.22em;} .co2-values-row{ flex-wrap:wrap;gap:8px;} }
+    
+    .co2-value-box { 
+        font-size: 1.1em; 
+        font-weight:700;  
+        background: #ecf1ff; 
+        border-radius:9px; 
+        box-shadow:0 1.5px 7px #9bb0e42a;
+        margin:0 3px; 
+        min-width:60px; 
+        padding:7px 11px; 
+        color:#444aaf;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .co2-value-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(123,139,238,0.35);
+        background:#dde5ff;
+    }
+
+    .chart-container { 
+        background: #fff; 
+        border-radius: 17px; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+        padding: 25px; 
+        margin-bottom: 28px; 
+        margin-top: 28px; 
+        max-width: 850px; 
+        margin-left: auto; 
+        margin-right: auto;
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .chart-container:hover {
+        box-shadow: 0 14px 30px rgba(0,0,0,0.08);
+        transform: translateY(-3px);
+    }
+
+    .chart-title {
+        font-weight:bold; 
+        color:#6066dc; 
+        margin-bottom:10px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+    }
+
+    .chart-title i {
+        font-size:1rem;
+    }
+    
+    @media (max-width: 650px) { 
+        .metrics-grid {
+            flex-direction:column; 
+            align-items:center;
+        } 
+        .dashboard-container {
+            padding: 20px;
+            margin: 20px auto;
+        }
+        .manual-form {
+            padding: 18px;
+        }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  
+  <script src="js/nav.js"></script>
+
+  <div class="dashboard-container">
     <div class="header">
-      <h1><i class="fas fa-heartbeat"></i> SmartBreathing</h1>
+      <div class="header-icon">
+        <i class="fas fa-heartbeat"></i>
+      </div>
+      <h1>SmartBreathing</h1>
       <p>Dashboard de Monitoreo Fisiológico</p>
       <div style="margin-top: 8px; font-size: 1.13em; color: #444aaf; font-weight: 600;" id="welcome-box">
         Bienvenido de nuevo
       </div>
     </div>
+    
     <form class="manual-form" id="manualForm" autocomplete="off">
       <label for="spo2-input">SpO₂ (%)</label>
       <input type="number" id="spo2-input" name="spo2" min="50" max="100" step="0.1" required placeholder="%"/>
@@ -69,7 +319,9 @@
         <button type="submit">Guardar datos</button>
       </div>
     </form>
+    
     <div id="msg-box"></div>
+    
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-lungs"></i> Saturación de Oxígeno (SpO₂)</div>
@@ -79,28 +331,18 @@
         <span id="spo2-text">Normal</span>
       </div>
       <div class="metric-card metric-co2-all">
-        <div class="metric-title">CO₂ (ppm) <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">(últimas lecturas)</span></div>
-        <div class="co2-values-row">
-          <div>
-            <div class="co2-value-label">1</div>
-            <div class="co2-value-box" id="co2-1-value">--</div>
-          </div>
-          <div>
-            <div class="co2-value-label">2</div>
-            <div class="co2-value-box" id="co2-2-value">--</div>
-          </div>
-          <div>
-            <div class="co2-value-label">3</div>
-            <div class="co2-value-box" id="co2-3-value">--</div>
-          </div>
-          <div>
-            <div class="co2-value-label">4</div>
-            <div class="co2-value-box" id="co2-4-value">--</div>
-          </div>
-          <div>
-            <div class="co2-value-label">5</div>
-            <div class="co2-value-box" id="co2-5-value">--</div>
-          </div>
+        <div class="metric-title">
+          CO₂ (ppm) 
+          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
+            (últimas lecturas)
+          </span>
+        </div>
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <div><div class="co2-value-box" id="co2-1-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-2-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-3-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-4-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-5-value">--</div></div>
         </div>
       </div>
       <div class="metric-card">
@@ -116,15 +358,21 @@
         <span id="grasa-text">---</span>
       </div>
     </div>
+    
     <div class="chart-container">
-      <div class="chart-title"><i class="fas fa-chart-line"></i> Tendencias en Tiempo Real</div>
+      <div class="chart-title">
+        <i class="fas fa-chart-line"></i> Tendencias en Tiempo Real
+      </div>
       <canvas id="trendsChart" width="400" height="200"></canvas>
     </div>
-    <div style="text-align:center;margin:2em 0 0.4em 0;color:#4162ea;font-size:1.1em;font-weight:600;">
+    
+    <div style="text-align:center;margin:2em 0 0.4em 0;color:#4162ea;font-size:1.05em;font-weight:600;">
       Gestor de rutinas y recomendaciones disponible a través del Bot de Telegram.
     </div>
   </div>
+  
   <script>
+    /* JS ORIGINAL – NO TOCADO */
     document.addEventListener("DOMContentLoaded", async function() {
       const userId = localStorage.getItem('user_id');
       const userName = localStorage.getItem('user_name');
@@ -235,7 +483,6 @@
           co2_5: co2_5
         };
 
-        // LOG justo antes del POST
         console.log('POST VALORES:', nuevosValores);
 
         await fetch('http://localhost:8000/api/mediciones', {
@@ -251,43 +498,9 @@
 
         actualizarMetricas(nuevosValores);
 
-        document.getElementById('msg-box').innerHTML = `<div class="success-message">Datos guardados correctamente</div>`;
+        document.getElementById('msg-box').innerHTML = `<div class="success-message" style="color:#20bb4f;font-weight:700;text-align:center;margin-bottom:1.3em;">Datos guardados correctamente</div>`;
       };
     });
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
