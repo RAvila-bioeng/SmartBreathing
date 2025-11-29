@@ -1159,6 +1159,9 @@ REGLAS ADICIONALES:
 - Máximo 500 caracteres.
 - Si hay alertas de seguridad o condiciones limitantes, siempre considéralas.
 - Recuerda que eres una IA, no un médico.
+- IMPORTANTE: Si el usuario pide generar una rutina, un plan de entrenamiento completo o una sesión detallada, NIÉGATE amablemente.
+  Dile: "Para generar tu rutina personalizada, usa el botón /menu y elige la opción de generar rutina."
+  (Puedes dar ejemplos de ejercicios sueltos o consejos, pero NUNCA generes la rutina completa por chat).
 """
 
             if self.openai_api_key:
