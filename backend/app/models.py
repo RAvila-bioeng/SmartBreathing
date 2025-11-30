@@ -159,3 +159,11 @@ class RoutineResponse(BaseModel):
 
 class RoutineRequest(BaseModel):
     goals: Optional[List[str]] = None
+
+class ECGMeasurementIn(BaseModel):
+    user_id: str
+    timestamp: datetime
+    fs: float
+    bpm_series: List[float]
+    bpm_mean: float
+    ecg_segment: List[float]
