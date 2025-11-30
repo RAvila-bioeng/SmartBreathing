@@ -19,6 +19,7 @@ from .models import (
 )
 from .db import get_database
 from .ai_engine import SmartBreathingAI
+from . import ecg
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,6 +80,9 @@ async def read_nuevo_usuario_paso2():
 
 
 ai_engine = SmartBreathingAI()
+
+# Register routers
+app.include_router(ecg.router, prefix="/api", tags=["ecg"])
 
 
 @app.get("/health")

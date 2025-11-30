@@ -382,6 +382,18 @@
       }
       document.getElementById('welcome-box').textContent = `Bienvenido de nuevo${userName ? ", " + userName : ""}`;
 
+      // Notify backend that this user is the "current ECG user"
+      try {
+        await fetch('http://localhost:8000/api/ecg/current-user', {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId })
+        });
+        console.log("Notified backend of current ECG user:", userId);
+      } catch (e) {
+        console.warn("Failed to notify backend of current ECG user:", e);
+      }
+
       let userAge = null, userGender = null;
       try {
         const resp = await fetch(`http://localhost:8000/api/users/by_id/${userId}`);
