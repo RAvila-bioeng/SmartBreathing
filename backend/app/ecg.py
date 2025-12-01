@@ -56,6 +56,35 @@ async def get_current_ecg_user():
         
     return {"user_id": str(state["user_id"])}
 
+@router.get("/ecg/latest/{user_id}")
+async def get_latest_ecg(user_id: str):
+    """
+    Gets the latest ECG measurement for the given user.
+    Returns the signal array, sampling frequency, and timestamp.
+    """
+    try:
+        user_oid = ObjectId(user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user_id format")
+
+    db = get_database()
+
+    # Find the most recent ECG document for this user
+    ecg_doc = db.ecg.find_one(
+        {"idUsuario": user_oid},
+        sort=[("fecha", -1)]
+    )
+
+    if not ecg_doc:
+        raise HTTPException(status_code=404, detail="No ECG data for this user")
+
+    return {
+        "user_id": str(ecg_doc["idUsuario"]),
+        "fs": ecg_doc.get("fs", 200),
+        "signal": ecg_doc.get("senal", []),
+        "fecha": ecg_doc.get("fecha").isoformat() if ecg_doc.get("fecha") else None
+    }
+
 @router.post("/ecg-measurements")
 async def create_ecg_measurement(measurement: ECGMeasurementIn):
     """

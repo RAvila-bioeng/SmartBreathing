@@ -418,6 +418,29 @@
       </div>
       <canvas id="trendsChart" width="1000" height="420"></canvas>
     </div>
+
+    <!-- NEW ECG CHART SECTION -->
+    <div class="chart-container" id="ecg-container">
+      <div class="chart-title">
+        <i class="fas fa-wave-square"></i> ECG (últimos 5 segundos)
+      </div>
+
+      <!-- Placeholder message if no data -->
+      <div id="ecg-no-data" style="
+          display:none;
+          text-align:center;
+          padding: 40px;
+          color: #777;
+          font-weight: 600;
+          font-size: 1.1em;
+          background: #f8f9fc;
+          border-radius: 12px;
+      ">
+        No hay datos de ECG disponibles todavía.
+      </div>
+
+      <canvas id="ecgChart" width="1000" height="320"></canvas>
+    </div>
     
     <div style="text-align:center;margin:2em 0 0.4em 0;color:#4162ea;font-size:1.05em;font-weight:600;">
       Gestor de rutinas y recomendaciones disponible a través del Bot de Telegram.
@@ -479,6 +502,11 @@
 
 
       function rangoGrasaYColor(grasa, sexo, edad) {
+        // Nueva lógica solicitada: > 30% es Alerta
+        if (grasa > 30) {
+           return { nivel: 'Alerta', color: 'status-danger' };
+        }
+
         let normalMin, normalMax, warningMax;
         if (sexo === 'mujer') {
           if (edad >= 20 && edad < 40)      { normalMin = 21; normalMax = 33; warningMax = 39; }
@@ -495,6 +523,12 @@
         if(grasa <= normalMax) return { nivel: 'Normal', color: 'status-good' };
         if(grasa <= warningMax) return { nivel: 'Moderado', color: 'status-warning' };
         return { nivel: 'Grave', color: 'status-danger' };
+      }
+
+      function bpmColorEstado(bpm) {
+         if (bpm < 50) return { estado: 'Bradicardia', color: 'status-warning' };
+         if (bpm > 100) return { estado: 'Taquicardia', color: 'status-danger' };
+         return { estado: 'Normal', color: 'status-good' };
       }
 
 
@@ -517,6 +551,23 @@
         ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('grasa-status').classList.remove(c));
         document.getElementById('grasa-status').classList.add(grasaEst.color);
         document.getElementById('grasa-text').textContent = grasaEst.nivel;
+
+        // Frecuencia Cardíaca (BPM) - Inicial y actualizaciones normales
+        const bpmVal = valores.bpm !== undefined ? Math.round(Number(valores.bpm)) : '--';
+        document.getElementById('hr-value').textContent = bpmVal;
+
+        // Actualizar estado visual del BPM
+        if (valores.bpm !== undefined) {
+           const bpmEst = bpmColorEstado(Number(valores.bpm));
+           ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
+           document.getElementById('hr-status').classList.add(bpmEst.color);
+           document.getElementById('hr-text').textContent = bpmEst.estado;
+        } else {
+           // Reset to default
+           ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
+           document.getElementById('hr-status').classList.add('status-good');
+           document.getElementById('hr-text').textContent = 'Normal';
+        }
 
 
         // CO₂ valores en línea
@@ -717,10 +768,116 @@
       }
       // -------------- FIN CÓDIGO GRÁFICA ----------------
 
+      // -------------- NUEVO CÓDIGO ECG ----------------
+      let ecgChart = null;
+
+      async function loadAndRenderECG(userId) {
+        const noDataMsg = document.getElementById('ecg-no-data');
+        const canvas = document.getElementById('ecgChart');
+
+        try {
+          const resp = await fetch(`http://localhost:8000/api/ecg/latest/${userId}`);
+
+          if (resp.status === 404) {
+             // Show "No hay datos"
+             noDataMsg.style.display = 'block';
+             canvas.style.display = 'none';
+             return;
+          }
+
+          if (!resp.ok) {
+             console.warn("Error fetching ECG:", resp.status);
+             return;
+          }
+
+          const data = await resp.json();
+          const signal = data.signal || [];
+          const fs = data.fs || 200;
+
+          if (signal.length === 0) {
+             noDataMsg.style.display = 'block';
+             canvas.style.display = 'none';
+             return;
+          }
+
+          // Data found -> Show canvas
+          noDataMsg.style.display = 'none';
+          canvas.style.display = 'block';
+
+          // Build time axis
+          // dt = 1/fs
+          const dt = 1.0 / fs;
+          const labels = signal.map((_, i) => (i * dt).toFixed(2));
+
+          if (!ecgChart) {
+             const ctx = canvas.getContext('2d');
+             ecgChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                  labels: labels,
+                  datasets: [{
+                    label: 'Amplitud (mV)',
+                    data: signal,
+                    borderColor: 'rgb(235, 77, 75)', // Reddish for ECG
+                    backgroundColor: 'rgba(235, 77, 75, 0.05)',
+                    borderWidth: 2,
+                    pointRadius: 0, // Continuous line
+                    tension: 0.1,   // Slight smoothing or 0
+                    fill: false
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  animation: false,
+                  scales: {
+                    x: {
+                      title: { display: true, text: 'Tiempo (s)', color: '#556' },
+                      ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+                      grid: { display:false }
+                    },
+                    y: {
+                      title: { display: true, text: 'mV', color: '#556' },
+                      grid: { color: 'rgba(0,0,0,0.05)' }
+                    }
+                  },
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      enabled: true,
+                      mode: 'nearest',
+                      intersect: false,
+                      callbacks: {
+                        label: function(ctx) {
+                           return ctx.raw + ' mV';
+                        }
+                      }
+                    }
+                  },
+                  elements: { line: { borderJoinStyle: 'round' } },
+                  interaction: { mode: 'nearest', intersect: false }
+                }
+             });
+             // Set height explicitly via style (already done in CSS, but good to ensure)
+             canvas.style.height = '320px';
+          } else {
+             // Update existing chart
+             ecgChart.data.labels = labels;
+             ecgChart.data.datasets[0].data = signal;
+             ecgChart.update();
+          }
+
+        } catch (e) {
+          console.error("Error loading ECG:", e);
+        }
+      }
+      // -------------- FIN NUEVO CÓDIGO ECG ----------------
+
 
       obtenerValoresActuales().then(valores => {
         actualizarMetricas(valores);
         updateChartWithValues(valores);
+        loadAndRenderECG(userId);
       });
 
 
@@ -786,6 +943,26 @@
 
         // Actualizamos la gráfica con los nuevos valores introducidos (CO2 + Humedad)
         updateChartWithValues(nuevosValores);
+
+        // 1. Fetch latest Mediciones to ensure BPM is up to date (per requirements)
+        try {
+          const freshVals = await obtenerValoresActuales();
+          // Update just the HR card or all? safer to update all, but specifically HR was requested.
+          // obtenerValoresActuales returns "valores" object.
+          if (freshVals && freshVals.bpm !== undefined) {
+             const bpm = Number(freshVals.bpm);
+             document.getElementById('hr-value').textContent = Math.round(bpm);
+
+             // Update status logic for new BPM
+             const bpmEst = bpmColorEstado(bpm);
+             ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
+             document.getElementById('hr-status').classList.add(bpmEst.color);
+             document.getElementById('hr-text').textContent = bpmEst.estado;
+          }
+        } catch(e) { console.error("Error fetching latest BPM:", e); }
+
+        // 2. Refresh ECG chart
+        await loadAndRenderECG(userId);
 
         document.getElementById('msg-box').innerHTML = `<div class="success-message" style="color:#20bb4f;font-weight:700;text-align:center;margin-bottom:1.3em;">Datos guardados correctamente</div>`;
       };
