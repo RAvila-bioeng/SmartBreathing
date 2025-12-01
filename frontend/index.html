@@ -18,6 +18,7 @@
         background: var(--bg-gradient-light);
         background-size: 200% 200%;
         animation: subtleGradient 18s ease-in-out infinite;
+        font-family: 'Poppins', sans-serif;
     }
 
     .dashboard-container { 
@@ -55,9 +56,7 @@
         box-shadow: 0 12px 26px rgba(102,126,234,0.4);
     }
 
-    .header-icon i {
-        font-size: 1.6rem;
-    }
+    .header-icon i { font-size: 1.6rem; }
 
     .header h1 { 
         color: #6066dc; 
@@ -119,7 +118,7 @@
         transform: translateY(-1px);
     }
 
-    .manual-form .co2-row { 
+    .manual-form .co2-row, .manual-form .hum-row { 
         display: flex; 
         flex-wrap: wrap; 
         align-items: center; 
@@ -219,7 +218,7 @@
     .status-warning {background: #FFEA6C; border-color:#f7ca33;}
     .status-danger {background: #f77070; border-color: #e94c4c;}
     
-    .co2-value-box { 
+    .co2-value-box, .hum-value-box { 
         font-size: 1.1em; 
         font-weight:700;  
         background: #ecf1ff; 
@@ -230,9 +229,10 @@
         padding:7px 11px; 
         color:#444aaf;
         transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        text-align:center;
     }
 
-    .co2-value-box:hover {
+    .co2-value-box:hover, .hum-value-box:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(123,139,238,0.35);
         background:#dde5ff;
@@ -241,34 +241,45 @@
     .chart-container { 
         background: #fff; 
         border-radius: 17px; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
-        padding: 25px; 
+        box-shadow: 0 6px 28px rgba(0,0,0,0.06); 
+        padding: 26px; 
         margin-bottom: 28px; 
         margin-top: 28px; 
-        max-width: 850px; 
+        max-width: 1000px; /* ligeramente mayor para más presencia */
         margin-left: auto; 
         margin-right: auto;
-        transition: box-shadow 0.2s ease, transform 0.2s ease;
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    /* ALTURA MÁS GRANDE E INTERMEDIA DEL CANVAS (CAMBIO SOLICITADO) */
+    .chart-container canvas {
+      height: 420px !important; /* aumentado para que se vea mejor */
+      max-height: 480px;
+      width: 100% !important;
     }
 
     .chart-container:hover {
-        box-shadow: 0 14px 30px rgba(0,0,0,0.08);
+        box-shadow: 0 18px 42px rgba(0,0,0,0.09);
         transform: translateY(-3px);
     }
 
     .chart-title {
         font-weight:bold; 
         color:#6066dc; 
-        margin-bottom:10px;
+        margin-bottom:14px;
         display:flex;
         align-items:center;
         gap:8px;
+        font-size:1.05rem;
     }
 
     .chart-title i {
         font-size:1rem;
     }
     
+    @media (max-width: 900px) {
+      .chart-container { max-width: 100%; padding: 18px; }
+    }
     @media (max-width: 650px) { 
         .metrics-grid {
             flex-direction:column; 
@@ -280,6 +291,9 @@
         }
         .manual-form {
             padding: 18px;
+        }
+        .chart-container {
+          max-width: 100%;
         }
     }
   </style>
@@ -305,6 +319,8 @@
       <input type="number" id="spo2-input" name="spo2" min="50" max="100" step="0.1" required placeholder="%"/>
       <label for="cintura-input">Cintura (cm)</label>
       <input type="number" id="cintura-input" name="cintura" min="20" max="250" step="0.1" required placeholder="cm"/>
+      
+      <!-- CO2 inputs -->
       <div class="co2-row">
         <label for="co2-1-input">CO₂ 1</label>
         <input type="number" id="co2-1-input" name="co2_1" min="0" max="40000" step="0.1" required placeholder="ppm"/>
@@ -316,6 +332,23 @@
         <input type="number" id="co2-4-input" name="co2_4" min="0" max="40000" step="0.1" required placeholder="ppm"/>
         <label for="co2-5-input">CO₂ 5</label>
         <input type="number" id="co2-5-input" name="co2_5" min="0" max="40000" step="0.1" required placeholder="ppm"/>
+      </div>
+
+      <!-- HUMEDAD inputs (nuevos) -->
+      <div class="hum-row" style="margin-top:8px;">
+        <label for="hum-1-input">Humedad 1</label>
+        <input type="number" id="hum-1-input" name="hum_1" min="0" max="100" step="0.1" required placeholder="%"/>
+        <label for="hum-2-input">Humedad 2</label>
+        <input type="number" id="hum-2-input" name="hum_2" min="0" max="100" step="0.1" required placeholder="%"/>
+        <label for="hum-3-input">Humedad 3</label>
+        <input type="number" id="hum-3-input" name="hum_3" min="0" max="100" step="0.1" required placeholder="%"/>
+        <label for="hum-4-input">Humedad 4</label>
+        <input type="number" id="hum-4-input" name="hum_4" min="0" max="100" step="0.1" required placeholder="%"/>
+        <label for="hum-5-input">Humedad 5</label>
+        <input type="number" id="hum-5-input" name="hum_5" min="0" max="100" step="0.1" required placeholder="%"/>
+      </div>
+
+      <div style="width:100%; display:flex; justify-content:center; margin-top:12px;">
         <button type="submit">Guardar datos</button>
       </div>
     </form>
@@ -330,6 +363,8 @@
         <div class="status-indicator status-good" id="spo2-status"></div>
         <span id="spo2-text">Normal</span>
       </div>
+
+      <!-- CO2 display card (igual que antes) -->
       <div class="metric-card metric-co2-all">
         <div class="metric-title">
           CO₂ (ppm) 
@@ -345,6 +380,24 @@
           <div><div class="co2-value-box" id="co2-5-value">--</div></div>
         </div>
       </div>
+
+      <!-- NUEVA tarjeta para HUMEDAD -->
+      <div class="metric-card metric-hum-all">
+        <div class="metric-title">
+          Humedad (%) 
+          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
+            (últimas lecturas)
+          </span>
+        </div>
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <div><div class="hum-value-box" id="hum-1-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-2-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-3-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-4-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-5-value">--</div></div>
+        </div>
+      </div>
+
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-heart"></i> Frecuencia Cardíaca (bpm)</div>
         <div class="metric-value" id="hr-value">--</div>
@@ -363,7 +416,7 @@
       <div class="chart-title">
         <i class="fas fa-chart-line"></i> Tendencias en Tiempo Real
       </div>
-      <canvas id="trendsChart" width="400" height="200"></canvas>
+      <canvas id="trendsChart" width="1000" height="420"></canvas>
     </div>
     
     <div style="text-align:center;margin:2em 0 0.4em 0;color:#4162ea;font-size:1.05em;font-weight:600;">
@@ -372,7 +425,7 @@
   </div>
   
   <script>
-    /* JS ORIGINAL – NO TOCADO */
+    /* JS ORIGINAL – NO TOCADO (salvo dataset de humedad y eje secundario) */
     document.addEventListener("DOMContentLoaded", async function() {
       const userId = localStorage.getItem('user_id');
       const userName = localStorage.getItem('user_name');
@@ -404,6 +457,7 @@
         }
       } catch(e) {}
 
+
       async function obtenerValoresActuales() {
         try {
           const response = await fetch('http://localhost:8000/api/mediciones?user_id=' + encodeURIComponent(userId));
@@ -416,11 +470,13 @@
         return {};
       }
 
+
       function spo2ColorEstado(valor) {
         if (valor >= 95) return { estado: 'Normal', color: 'status-good' };
         if (valor >= 90) return { estado: 'Precaución', color: 'status-warning' };
         return { estado: 'Grave', color: 'status-danger' };
       }
+
 
       function rangoGrasaYColor(grasa, sexo, edad) {
         let normalMin, normalMax, warningMax;
@@ -434,11 +490,13 @@
           else                              { normalMin = 11; normalMax = 22; warningMax = 28; }
         } else { return { nivel: '---', color: 'status-warning' }; }
 
+
         if(grasa < normalMin) return { nivel: 'Precaución', color: 'status-warning' };
         if(grasa <= normalMax) return { nivel: 'Normal', color: 'status-good' };
         if(grasa <= warningMax) return { nivel: 'Moderado', color: 'status-warning' };
         return { nivel: 'Grave', color: 'status-danger' };
       }
+
 
       function actualizarMetricas(valores) {
         // SpO₂
@@ -448,6 +506,7 @@
         ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('spo2-status').classList.remove(c));
         document.getElementById('spo2-status').classList.add(spo2Est.color);
         document.getElementById('spo2-text').textContent = spo2Est.estado;
+
 
         // % Grasa (YMCA)
         const grasaVal = valores.grasa_porc !== undefined ? Number(valores.grasa_porc).toFixed(2) : '--';
@@ -459,19 +518,216 @@
         document.getElementById('grasa-status').classList.add(grasaEst.color);
         document.getElementById('grasa-text').textContent = grasaEst.nivel;
 
+
         // CO₂ valores en línea
         document.getElementById('co2-1-value').textContent = valores.co2_1 !== undefined ? valores.co2_1 : '--';
         document.getElementById('co2-2-value').textContent = valores.co2_2 !== undefined ? valores.co2_2 : '--';
         document.getElementById('co2-3-value').textContent = valores.co2_3 !== undefined ? valores.co2_3 : '--';
         document.getElementById('co2-4-value').textContent = valores.co2_4 !== undefined ? valores.co2_4 : '--';
         document.getElementById('co2-5-value').textContent = valores.co2_5 !== undefined ? valores.co2_5 : '--';
+
+        // HUMEDAD valores en línea (nuevos)
+        document.getElementById('hum-1-value').textContent = valores.hum_1 !== undefined ? valores.hum_1 + ' %' : '--';
+        document.getElementById('hum-2-value').textContent = valores.hum_2 !== undefined ? valores.hum_2 + ' %' : '--';
+        document.getElementById('hum-3-value').textContent = valores.hum_3 !== undefined ? valores.hum_3 + ' %' : '--';
+        document.getElementById('hum-4-value').textContent = valores.hum_4 !== undefined ? valores.hum_4 + ' %' : '--';
+        document.getElementById('hum-5-value').textContent = valores.hum_5 !== undefined ? valores.hum_5 + ' %' : '--';
       }
 
-      obtenerValoresActuales().then(valores => actualizarMetricas(valores));
+
+      // -------------- CÓDIGO AÑADIDO: GRÁFICA DOBLE EJE (CO2 + HUMEDAD) ----------------
+      let trendsChart = null;
+
+      function extractCo2Array(valores) {
+        return [
+          valores.co2_1 !== undefined && valores.co2_1 !== null && valores.co2_1 !== '' ? Number(valores.co2_1) : null,
+          valores.co2_2 !== undefined && valores.co2_2 !== null && valores.co2_2 !== '' ? Number(valores.co2_2) : null,
+          valores.co2_3 !== undefined && valores.co2_3 !== null && valores.co2_3 !== '' ? Number(valores.co2_3) : null,
+          valores.co2_4 !== undefined && valores.co2_4 !== null && valores.co2_4 !== '' ? Number(valores.co2_4) : null,
+          valores.co2_5 !== undefined && valores.co2_5 !== null && valores.co2_5 !== '' ? Number(valores.co2_5) : null
+        ];
+      }
+
+      function extractHumArray(valores) {
+        return [
+          valores.hum_1 !== undefined && valores.hum_1 !== null && valores.hum_1 !== '' ? Number(valores.hum_1) : null,
+          valores.hum_2 !== undefined && valores.hum_2 !== null && valores.hum_2 !== '' ? Number(valores.hum_2) : null,
+          valores.hum_3 !== undefined && valores.hum_3 !== null && valores.hum_3 !== '' ? Number(valores.hum_3) : null,
+          valores.hum_4 !== undefined && valores.hum_4 !== null && valores.hum_4 !== '' ? Number(valores.hum_4) : null,
+          valores.hum_5 !== undefined && valores.hum_5 !== null && valores.hum_5 !== '' ? Number(valores.hum_5) : null
+        ];
+      }
+
+      // calcula yMax y stepSize manteniendo máximo por defecto en 40.000 ppm
+      function computeYAxisParams(dataArr) {
+        const numeric = dataArr.filter(v => v !== null && !isNaN(v));
+        const CAP = 40000;
+        if (numeric.length === 0) {
+          return { yMax: CAP, step: 5000 };
+        }
+        const maxVal = Math.max(...numeric);
+        // Si los datos entran en el rango <= CAP, fijamos yMax = CAP y step a 5000
+        if (maxVal <= CAP) {
+          return { yMax: CAP, step: 5000 };
+        }
+        // Si alguna medida supera CAP, calculamos un yMax mayor que cubra ese valor con pasos grandes
+        const approxSteps = 5;
+        let rawStep = Math.ceil(maxVal / approxSteps);
+        let step = 100;
+        if (rawStep > 5000) step = 1000;
+        else if (rawStep > 2500) step = 500;
+        else if (rawStep > 800) step = 250;
+        else if (rawStep > 300) step = 200;
+        else step = 100;
+        const yMax = Math.ceil(maxVal / step) * step;
+        return { yMax: Math.max(yMax, step), step };
+      }
+
+      function updateChartWithValues(valores) {
+        const co2arr = extractCo2Array(valores);
+        const humarr = extractHumArray(valores);
+        const labels = ['1','2','3','4','5'];
+
+        const yParams = computeYAxisParams(co2arr);
+
+        if (!trendsChart) {
+          const ctx = document.getElementById('trendsChart').getContext('2d');
+          trendsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'CO₂ (ppm)',
+                  data: co2arr,
+                  yAxisID: 'yCo2',
+                  fill: false,                 // <-- sin sombreado bajo la curva
+                  tension: 0.28,
+                  pointRadius: 7,              // círculos azules grandes
+                  pointHoverRadius: 9,
+                  borderWidth: 3,
+                  backgroundColor: 'rgba(66,133,244,0.0)', // transparente
+                  borderColor: 'rgba(66,133,244,0.95)',
+                  pointBackgroundColor: '#ffffff',
+                  pointBorderColor: 'rgba(66,133,244,0.95)',
+                  pointStyle: 'circle',
+                  spanGaps: true
+                },
+                {
+                  label: 'Humedad (%)',
+                  data: humarr,
+                  yAxisID: 'yHum',
+                  fill: false,
+                  tension: 0.2,
+                  pointRadius: 7,              // cuadrados del mismo tamaño que los círculos
+                  pointHoverRadius: 9,
+                  borderWidth: 2.6,
+                  backgroundColor: 'rgba(255,99,132,0.0)', // transparente
+                  borderColor: 'rgba(255,99,132,0.95)',
+                  pointBackgroundColor: 'rgba(255,99,132,0.95)',
+                  pointBorderColor: '#ffffff',
+                  pointStyle: 'rect',          // cuadrado
+                  spanGaps: true
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              layout: { padding: { top: 6, bottom: 6, left: 6, right: 6 } },
+              scales: {
+                x: {
+                  title: { display: true, text: 'Número de medición', color: '#556' },
+                  ticks: { maxRotation: 0, autoSkip: false, font: { size: 13, family: 'Poppins, sans-serif' } },
+                  grid: { color: 'rgba(0,0,0,0.03)' }
+                },
+                yCo2: {
+                  type: 'linear',
+                  position: 'left',
+                  title: { display: true, text: 'CO₂ (ppm)', color: '#556' },
+                  beginAtZero: true,
+                  min: 0,
+                  max: yParams.yMax,
+                  ticks: {
+                    stepSize: yParams.step,
+                    callback: function(value) { return value + ' ppm'; },
+                    font: { size: 12, family: 'Poppins, sans-serif' }
+                  },
+                  grid: {
+                    color: 'rgba(0,0,0,0.06)',
+                    borderDash: [2, 4]
+                  }
+                },
+                yHum: {
+                  type: 'linear',
+                  position: 'right',
+                  title: { display: true, text: 'Humedad (%)', color: '#556' }, // <-- en negro (mismo color que CO2)
+                  beginAtZero: true,
+                  min: 0,
+                  max: 100,
+                  ticks: {
+                    stepSize: 20,
+                    callback: function(value) { return value + ' %'; },
+                    font: { size: 12, family: 'Poppins, sans-serif' }
+                  },
+                  grid: { display: false } // evita grid por duplicado
+                }
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                  labels: {
+                    usePointStyle: true,
+                    boxWidth: 10,
+                    font: { family: 'Poppins, sans-serif', size: 12 }
+                  }
+                },
+                tooltip: {
+                  enabled: true,
+                  backgroundColor: 'rgba(0,0,0,0.82)',
+                  titleFont: { family: 'Poppins, sans-serif', size: 13 },
+                  bodyFont: { family: 'Poppins, sans-serif', size: 13 },
+                  callbacks: {
+                    label: function(context) {
+                      const seriesLabel = context.dataset.label || '';
+                      const val = context.raw;
+                      if (seriesLabel.includes('CO₂')) return `CO₂: ${val !== null ? val : '—'} ppm`;
+                      if (seriesLabel.includes('Humedad')) return `Humedad: ${val !== null ? val : '—'} %`;
+                      return `${seriesLabel}: ${val}`;
+                    }
+                  }
+                }
+              },
+              elements: { line: { borderJoinStyle: 'round' } },
+              interaction: { mode: 'nearest', intersect: false }
+            }
+          });
+
+          // height for canvas
+          document.getElementById('trendsChart').style.height = '420px';
+        } else {
+          // actualizamos datos y escalas según valores nuevos
+          trendsChart.data.datasets[0].data = co2arr;
+          trendsChart.data.datasets[1].data = humarr;
+          trendsChart.options.scales.yCo2.max = yParams.yMax;
+          trendsChart.options.scales.yCo2.ticks.stepSize = yParams.step;
+          // yHum (0-100) queda fijo
+          trendsChart.update();
+        }
+      }
+      // -------------- FIN CÓDIGO GRÁFICA ----------------
+
+
+      obtenerValoresActuales().then(valores => {
+        actualizarMetricas(valores);
+        updateChartWithValues(valores);
+      });
+
 
       document.getElementById('manualForm').onsubmit = async function(e) {
         e.preventDefault();
         const valoresActuales = await obtenerValoresActuales();
+
 
         const spo2 = parseFloat(document.getElementById('spo2-input').value);
         const cintura = parseFloat(document.getElementById('cintura-input').value);
@@ -482,7 +738,16 @@
         const co2_3 = parseFloat(document.getElementById('co2-3-input').value);
         const co2_4 = parseFloat(document.getElementById('co2-4-input').value);
         const co2_5 = parseFloat(document.getElementById('co2-5-input').value);
+
+        // Nuevos: humedades
+        const hum_1 = parseFloat(document.getElementById('hum-1-input').value);
+        const hum_2 = parseFloat(document.getElementById('hum-2-input').value);
+        const hum_3 = parseFloat(document.getElementById('hum-3-input').value);
+        const hum_4 = parseFloat(document.getElementById('hum-4-input').value);
+        const hum_5 = parseFloat(document.getElementById('hum-5-input').value);
+
         const now = new Date().toISOString();
+
 
         const nuevosValores = {
           ...valoresActuales,
@@ -492,10 +757,18 @@
           co2_2: co2_2,
           co2_3: co2_3,
           co2_4: co2_4,
-          co2_5: co2_5
+          co2_5: co2_5,
+          // añadimos humedad
+          hum_1: hum_1,
+          hum_2: hum_2,
+          hum_3: hum_3,
+          hum_4: hum_4,
+          hum_5: hum_5
         };
 
+
         console.log('POST VALORES:', nuevosValores);
+
 
         await fetch('http://localhost:8000/api/mediciones', {
           method: 'POST',
@@ -508,7 +781,11 @@
           })
         });
 
+
         actualizarMetricas(nuevosValores);
+
+        // Actualizamos la gráfica con los nuevos valores introducidos (CO2 + Humedad)
+        updateChartWithValues(nuevosValores);
 
         document.getElementById('msg-box').innerHTML = `<div class="success-message" style="color:#20bb4f;font-weight:700;text-align:center;margin-bottom:1.3em;">Datos guardados correctamente</div>`;
       };
@@ -516,3 +793,14 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
