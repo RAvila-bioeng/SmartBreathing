@@ -1407,7 +1407,7 @@ REGLAS ADICIONALES:
 
         welcome_text = self._get_message_by_tone("welcome_menu", user_data).format(name=user_data.get("nombre", "Usuario"))
         
-        welcome_text += f"\n\nTu perfil:\n• Deporte: {user_data.get('sport_preference', 'N/A')}\n• Nivel: {user_data.get('fitness_level', 'N/A')}"
+        welcome_text += f"\n\nSelecciona una opción para continuar"
         welcome_text += "\n\nTambién puedes escribir /menu en cualquier momento para volver a este menú principal."
 
         if update.callback_query:
