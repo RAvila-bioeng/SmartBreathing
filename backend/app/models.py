@@ -149,6 +149,12 @@ class ExerciseInRoutine(BaseModel):
     duration: int
     intensity: str
     id_ejercicio: Optional[str] = None
+    # Nuevos campos opcionales para visualización enriquecida
+    deporte: Optional[str] = None
+    modalidad: Optional[str] = None
+    equipamiento: Optional[str] = None
+    superficie: Optional[str] = None
+    tags_ia: Optional[str] = None
 
 class RoutineResponse(BaseModel):
     name: str

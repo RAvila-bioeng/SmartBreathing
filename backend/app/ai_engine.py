@@ -12,6 +12,13 @@ from .db import get_database
 
 logger = logging.getLogger(__name__)
 
+def block_regex_safe(block: str) -> str:
+    """Helper for safe regex construction from block type"""
+    if not block: return "Principal"
+    if "Calentamiento" in block: return "Calentamiento"
+    if "Principal" in block or "Núcleo" in block: return "Principal|Núcleo"
+    if "Vuelta" in block: return "Vuelta"
+    return "Principal"
 
 class SmartBreathingAI:
     def __init__(self):
@@ -421,6 +428,11 @@ class SmartBreathingAI:
                     duration=dur,
                     intensity=ex.get("intensidad_relativa", "Moderado"),
                     id_ejercicio=str(ex.get("_id")),
+                    deporte=ex.get("deporte"),
+                    modalidad=ex.get("modalidad"),
+                    equipamiento=ex.get("material_utilizado"),
+                    superficie=ex.get("superficie"),
+                    tags_ia=ex.get("tags_ia"),
                 )
             )
 
@@ -444,6 +456,84 @@ class SmartBreathingAI:
             difficulty=target_level.capitalize(),
             dias_semana=days,
             exercises=routine_exercises,
+        )
+
+    # -------------------------------------------------------------------------
+    #   ALTERNATIVA DE EJERCICIO (NUEVA LÓGICA)
+    # -------------------------------------------------------------------------
+    def get_alternative_exercise(self, user_profile: UserProfile, original_exercise_id: str) -> Optional[ExerciseInRoutine]:
+        """
+        Busca un ejercicio alternativo para uno existente.
+        Intenta mantener el mismo bloque, deporte y características.
+        """
+        if self.db is None:
+            return None
+
+        # 1. Recuperar el ejercicio original para saber qué buscar
+        try:
+            from bson import ObjectId
+            orig_oid = ObjectId(original_exercise_id)
+            orig_ex = self.db.Ejercicios.find_one({"_id": orig_oid})
+        except Exception:
+            orig_ex = None
+        
+        if not orig_ex:
+            logger.warning(f"Original exercise {original_exercise_id} not found for replacement.")
+            return None
+
+        # Extraer características clave
+        block_type = orig_ex.get("tipo_bloque", "")
+        sport = orig_ex.get("deporte", "")
+        
+        # Construir query similar a generate_routine pero enfocada
+        # Intentamos buscar mismo bloque y deporte, excluyendo el ID original
+        query = {
+            "tipo_bloque": {"$regex": block_regex_safe(block_type), "$options": "i"},
+            "_id": {"$ne": orig_oid}
+        }
+        
+        # Filtro de deporte (si existe en el original)
+        if sport:
+            query["deporte"] = {"$regex": sport, "$options": "i"}
+            
+        # Filtro de seguridad (siempre)
+        # (Reutilizamos la lógica de seguridad implícita, pero aquí filtramos en memoria o añadimos al query si fuera fácil)
+        # Dado que _is_safe es post-query, lo haremos igual.
+
+        # Ejecutamos búsqueda
+        candidates = list(self.db.Ejercicios.find(query).limit(20))
+        
+        # Si no hay del mismo deporte, relajamos la query (mismo bloque, cualquier deporte compatible)
+        if not candidates:
+            del query["deporte"]
+            candidates = list(self.db.Ejercicios.find(query).limit(20))
+
+        # Filtrar candidatos seguros
+        safe_candidates = [c for c in candidates if self._is_safe(user_profile, c)]
+        
+        if not safe_candidates:
+            return None
+            
+        # Elegir uno al azar
+        new_ex = random.choice(safe_candidates)
+        
+        # Convertir a ExerciseInRoutine
+        try:
+            dur = int(float(new_ex.get("duracion_aprox_min", 10)))
+        except: 
+            dur = 10
+            
+        return ExerciseInRoutine(
+            name=new_ex.get("ejercicio", "Ejercicio Alternativo"),
+            description=(new_ex.get("notas_entrenador") or new_ex.get("descripcion") or ""),
+            duration=dur,
+            intensity=new_ex.get("intensidad_relativa", "Moderado"),
+            id_ejercicio=str(new_ex.get("_id")),
+            deporte=new_ex.get("deporte"),
+            modalidad=new_ex.get("modalidad"),
+            equipamiento=new_ex.get("material_utilizado"),
+            superficie=new_ex.get("superficie"),
+            tags_ia=new_ex.get("tags_ia")
         )
 
     # -------------------------------------------------------------------------

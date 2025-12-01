@@ -11,6 +11,7 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    error as telegram_error,
 )
 from telegram.ext import (
     Application,
@@ -866,6 +867,152 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
         elif data == "full_analysis":
             await self.analysis_command(update, context)
 
+        # --- ROUTINE INTERACTION FLOW (Moved ABOVE generic routine_ check) ---
+        elif data == "routine_accept":
+            routine = context.user_data.get("proposed_routine")
+            rtype = context.user_data.get("proposed_routine_type")
+            if routine and rtype:
+                # Save routine logic
+                await self._save_assigned_routine(user_data, routine, rtype)
+                
+                # Show clean summary
+                await query.edit_message_text(
+                    "✅ ¡Rutina aceptada y guardada!\n\n"
+                    "Ya la tienes disponible en 'Registrar Ejercicios' para cuando quieras empezar.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Menú Principal", callback_data="main_menu")]])
+                )
+            else:
+                await query.edit_message_text("❌ No hay rutina pendiente para aceptar.")
+
+        elif data == "routine_cancel":
+            context.user_data.pop("proposed_routine", None)
+            context.user_data.pop("proposed_routine_type", None)
+            await query.edit_message_text(
+                "❌ Creación de rutina cancelada.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver a Rutinas", callback_data="routines")]])
+            )
+
+        elif data == "routine_view_details":
+            routine = context.user_data.get("proposed_routine")
+            if not routine: return
+
+            keyboard = []
+            for i, ex in enumerate(routine.get("exercises", [])):
+                name = ex.get("name", f"Ejercicio {i+1}")
+                keyboard.append([InlineKeyboardButton(f"🔍 {name}", callback_data=f"routine_details_show_{i}")])
+            
+            keyboard.append([InlineKeyboardButton("🔙 Volver a la rutina", callback_data="routine_back_proposal")])
+            
+            await query.edit_message_text(
+                "Selecciona un ejercicio para ver sus detalles completos:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+
+        elif data.startswith("routine_details_show_"):
+            try:
+                idx = int(data.split("_")[-1])
+                routine = context.user_data.get("proposed_routine")
+                if routine and 0 <= idx < len(routine["exercises"]):
+                    ex = routine["exercises"][idx]
+                    
+                    text = self._format_exercise_details(ex, idx + 1)
+                    
+                    keyboard = [[InlineKeyboardButton("🔙 Volver a la rutina", callback_data="routine_back_proposal")]]
+                    
+                    try:
+                        await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.MARKDOWN)
+                    except telegram_error.BadRequest as e:
+                        if "Message is not modified" in str(e):
+                            return
+                        raise e
+            except Exception as e:
+                logger.error(f"Error showing details: {e}")
+                await query.answer("Error al mostrar detalles")
+
+        elif data == "routine_back_proposal":
+            await self._show_proposed_routine(update, context)
+
+        elif data == "routine_new_variant":
+            # Check normalized level
+            level = self._normalize_difficulty(user_data)
+            
+            if level == "exigente":
+                await query.edit_message_text(
+                    "⛔ En modo 'Exigente' no se permiten cambios. Esta es la rutina óptima para ti. ¿Aceptas el reto?",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("✅ Sí, acepto", callback_data="routine_accept")],
+                        [InlineKeyboardButton("❌ Cancelar", callback_data="routine_cancel")]
+                    ])
+                )
+            elif level == "intermedio":
+                 # Allow specific exercise change
+                 await query.edit_message_text(
+                    "En modo de exigencia 'Intermedio' puedes cambiar ejercicios específicos, no cambiar tu rutina entera.\nUsa 'Cambiar un ejercicio' para ajustar lo que no te guste.",
+                     reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔄 Cambiar un ejercicio", callback_data="routine_change_exercise_menu")],
+                        [InlineKeyboardButton("🔙 Volver", callback_data="routine_back_proposal")]
+                    ])
+                )
+            else: # bajo
+                # Allow full regeneration
+                rtype = context.user_data.get("proposed_routine_type")
+                if rtype:
+                    await self._create_routine_by_type(update, context, rtype)
+
+        elif data == "routine_change_exercise_menu":
+            level = self._normalize_difficulty(user_data)
+            if level == "exigente":
+                 await query.answer("No disponible en modo Exigente, esta es tu rutina. Sé consistente si quieres mejorar", show_alert=True)
+                 return
+            
+            routine = context.user_data.get("proposed_routine")
+            if not routine: return
+            
+            keyboard = []
+            for i, ex in enumerate(routine.get("exercises", [])):
+                keyboard.append([InlineKeyboardButton(f"🔄 Cambiar: {ex.get('name')}", callback_data=f"routine_swap_{i}")])
+            
+            keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="routine_back_proposal")])
+            
+            await query.edit_message_text(
+                "Elige qué ejercicio quieres cambiar por una alternativa:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+
+        elif data.startswith("routine_swap_"):
+            try:
+                idx = int(data.split("_")[-1])
+                routine = context.user_data.get("proposed_routine")
+                if routine and 0 <= idx < len(routine["exercises"]):
+                    ex = routine["exercises"][idx]
+                    ex_id = ex.get("id_ejercicio")
+                    
+                    if not ex_id:
+                        await query.answer("Este ejercicio no tiene alternativa disponible.", show_alert=True)
+                        return
+                    
+                    # Call backend for alternative
+                    user_oid = str(user_data["_id"])
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(
+                            f"{self.api_base_url}/api/ai/alternative-exercise/{user_oid}",
+                            json={"exercise_id": ex_id}
+                        ) as resp:
+                            if resp.status == 200:
+                                new_ex = await resp.json()
+                                # Update routine in memory
+                                routine["exercises"][idx] = new_ex
+                                context.user_data["proposed_routine"] = routine
+                                await query.answer("✅ Ejercicio cambiado")
+                                await self._show_proposed_routine(update, context)
+                            else:
+                                await query.answer("❌ No se encontró alternativa", show_alert=True)
+            except Exception as e:
+                logger.error(f"Error swapping: {e}")
+                await query.answer("Error al cambiar ejercicio")
+
+        # --- END ROUTINE INTERACTION FLOW ---
+
         elif data.startswith("routine_"):
             routine_type = data.split("_", 1)[1]
             await self._create_routine_by_type(update, context, routine_type)
@@ -1077,9 +1224,9 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
             grado = (user_data.get("grado_exigencia") or "").lower()
             if "exigente" in grado:
                 style_instruction = (
-                    "Tu tono es como un entrenador militar estricto: muy exigente, directo e intenso. "
+                    "Tu tono es como un entrenador militar estricto: muy exigente, directo e intenso. En el borde de ser maleducado. "
                     "Empujas al usuario al límite, usas frases cortas y firmes, "
-                    "pero NUNCA insultas, humillas ni eres abusivo."
+                    "pero NUNCA insultas ni eres abusivo, se directo y claro."
                 )
             elif "moderado" in grado:
                 style_instruction = (
@@ -1089,7 +1236,7 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
             else:  # bajo u otros
                 style_instruction = (
                     "Tu tono es cálido, amigable y alentador. Apoyas al usuario con empatía, "
-                    "refuerzo positivo y algunos emojis."
+                    "refuerzo positivo y algunos emojis, pero no demasiados."
                 )
 
             limiting_condition = user_data.get('condicion_limitante_detalle')
@@ -1124,6 +1271,18 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
                     warnings = self._check_health_risks(readings)
                     if warnings:
                         measurements_note += f"\n- ALERTAS DE SEGURIDAD ACTIVAS: {'; '.join(warnings)}. Sé conservador y prioriza la salud."
+                
+                # Retrieve ECG context (summary) if available
+                try:
+                    ecg_col = db.db.ecg
+                    ecg_doc = await ecg_col.find_one({"idUsuario": user_oid}, sort=[("fecha", -1)])
+                    if ecg_doc:
+                         fs = ecg_doc.get("fs", 200)
+                         signal = ecg_doc.get("senal", [])
+                         # Simple metric: heart rate variability or just presence
+                         measurements_note += f"\n- ULTIMO ECG DISPONIBLE: {len(signal)} muestras a {fs}Hz. (Usar para contexto de salud cardiaca)."
+                except Exception:
+                    pass
 
                 rout_col = db.db.ejercicios_asignados
                 latest_rout = await rout_col.find_one({"idUsuario": user_oid}, sort=[("fecha_creacion_rutina", -1)])
@@ -1138,6 +1297,9 @@ Confianza del Análisis: {analysis.get('confidence_score', 0) * 100:.0f}%
                         status = "(Hecho)" if e.get("resultado") == "finalizado" else ""
                         ex_list.append(f"{e.get('nombre')} {status}")
                     routine_note += ", ".join(ex_list)
+                    
+            # Additive CO2 context explanation
+            co2_context = "\n- CONTEXTO CO2: Si el CO2 es alto (>1000), sugiere ventilación. Si es muy alto (>2000), sugiere descanso inmediato."
 
             prompt = f"""
 INFORMACIÓN DEL USUARIO:
@@ -1146,7 +1308,7 @@ INFORMACIÓN DEL USUARIO:
 - Peso: {user_data.get('peso', user_data.get('weight', 'N/A'))} kg
 - Deporte: {user_data.get('sport_preference', 'N/A')}
 - Nivel: {user_data.get('fitness_level', 'N/A')}
-- Preferencia de esfuerzo (grado_exigencia): {user_data.get('grado_exigencia', 'N/A')}{condition_note}{measurements_note}{routine_note}
+- Preferencia de esfuerzo (grado_exigencia): {user_data.get('grado_exigencia', 'N/A')}{condition_note}{measurements_note}{co2_context}{routine_note}
 
 CONSULTA DEL USUARIO: {message}
 
@@ -1438,9 +1600,8 @@ REGLAS ADICIONALES:
             return
 
         await update.callback_query.edit_message_text(
-            "⚠️ Generando nueva rutina. Tu rutina asignada anterior "
-            "será reemplazada y solo se usará la más reciente.\n\n"
-            "Generando con IA...",
+            f"⚡ Generando rutina {routine_type}...\n"
+            "Analizando tu perfil y adaptando cargas...",
         )
 
         goals = [routine_type]
@@ -1449,22 +1610,11 @@ REGLAS ADICIONALES:
             routine = await self._generate_ai_routine(str(user_data["_id"]), goals)
 
             if routine:
-                await self._save_assigned_routine(user_data, routine, routine_type)
-
-                routine_text = self._format_routine(routine)
-
-                keyboard = [
-                    [
-                        InlineKeyboardButton(
-                            "🔙 Menú Principal", callback_data="main_menu"
-                        )
-                    ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-
-                await update.callback_query.edit_message_text(
-                    routine_text, reply_markup=reply_markup
-                )
+                # Save temporarily for interaction
+                context.user_data["proposed_routine"] = routine
+                context.user_data["proposed_routine_type"] = routine_type
+                
+                await self._show_proposed_routine(update, context)
             else:
                 await update.callback_query.edit_message_text(
                     "❌ No he podido generar tu rutina. Inténtalo de nuevo."
@@ -1481,6 +1631,32 @@ REGLAS ADICIONALES:
             await update.callback_query.edit_message_text(
                 "❌ Error generando la rutina. Inténtalo de nuevo."
             )
+
+    async def _show_proposed_routine(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Displays the proposed routine with interaction buttons."""
+        routine = context.user_data.get("proposed_routine")
+        if not routine: return
+
+        routine_text = self._format_routine(routine)
+        
+        # Interactive buttons
+        keyboard = [
+            [InlineKeyboardButton("✅ Aceptar Rutina", callback_data="routine_accept")],
+            [InlineKeyboardButton("🔄 Nueva Variante", callback_data="routine_new_variant")],
+            [InlineKeyboardButton("📝 Ver Detalles", callback_data="routine_view_details")],
+            [InlineKeyboardButton("❌ Cancelar", callback_data="routine_cancel")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await update.callback_query.edit_message_text(
+                routine_text + "\n\n¿Qué te parece esta propuesta?", 
+                reply_markup=reply_markup
+            )
+        except telegram_error.BadRequest as e:
+            if "Message is not modified" in str(e):
+                return
+            raise e
 
     async def _save_assigned_routine(
         self, user_data: Dict, routine: Dict, routine_type: str
@@ -1704,24 +1880,52 @@ REGLAS ADICIONALES:
         return "\n".join([f"⚠️ {alert}" for alert in alerts])
 
     def _format_routine(self, routine: Dict) -> str:
-        """Formats routine"""
-        text = f"""
-🏋️‍♂️ {routine.get('name', 'Rutina Personalizada')}
+        """Formats routine with a clean style."""
+        text = f"🏋️‍♂️ {routine.get('name', 'Rutina Personalizada')}\n\n"
+        
+        exercises = routine.get("exercises", [])
+        if not exercises:
+            text += "No hay ejercicios asignados."
+        else:
+            for i, ex in enumerate(exercises, 1):
+                text += f"{i}. {ex.get('name', 'Ejercicio')}\n"
+                # Details in a simplified line
+                dur = ex.get('duration', 'N/A')
+                ints = ex.get('intensity', 'N/A')
+                text += f"   ⏱️ {dur} min | ⚡ {ints}\n"
+                
+        text += f"\nTotal: {routine.get('total_duration', 0)} min aprox."
+        return text
 
-Duración: {routine.get('total_duration', 'N/A')} minutos
-Dificultad: {routine.get('difficulty', 'N/A')}
+    def _format_exercise_details(self, ex: Dict, index: int) -> str:
+        """Formats detailed view of a single exercise."""
+        name = ex.get("name", "Ejercicio")
+        dur = ex.get("duration", "N/A")
+        ints = ex.get("intensity", "N/A")
+        desc = ex.get("description", "Sin descripción.")
+        
+        # Meta info
+        sport = ex.get("deporte", "N/A")
+        modal = ex.get("modalidad", "N/A")
+        equip = ex.get("equipamiento", "N/A")
+        surf = ex.get("superficie", "N/A")
+        tags = ex.get("tags_ia", "")
 
-Ejercicios:
-"""
-
-        for i, exercise in enumerate(routine.get("exercises", [])[:5], 1):
-            text += f"""
-{i}. {exercise.get('name', 'Ejercicio')}
-   • Duración: {exercise.get('duration', 'N/A')} min
-   • Intensidad: {exercise.get('intensity', 'N/A')}
-   • {exercise.get('description', 'Sin descripción')}
-"""
-
+        text = f"📌 *Detalles del ejercicio {index}*\n\n"
+        text += f"*{name}*\n"
+        text += f"⏱️ Duración: {dur} min\n"
+        text += f"⚡ Intensidad: {ints}\n\n"
+        
+        text += f"📝 *Indicaciones:*\n{desc}\n\n"
+        
+        text += f"🏅 Deporte: {sport}\n"
+        text += f"📍 Modalidad: {modal}\n"
+        text += f"🏋️ Equipamiento: {equip}\n"
+        text += f"🏟️ Superficie: {surf}\n"
+        
+        if tags:
+            text += f"🏷️ Tags: {tags}\n"
+            
         return text
     
     def _format_sensor_data(self, readings: List[Dict]) -> str:
@@ -1738,6 +1942,20 @@ Ejercicios:
                 text += f"   • {k}: {v}\n"
             text += "\n"
         return text
+
+    def _normalize_difficulty(self, user_data: Dict) -> str:
+        """Normalizes user difficulty level to 'bajo', 'intermedio', or 'exigente'."""
+        raw = (user_data.get("grado_exigencia") or "").lower().strip()
+        
+        if "exigente" in raw or "alto" in raw:
+            return "exigente"
+        
+        # 'moderado' maps to 'intermedio'
+        if "intermedio" in raw or "moderado" in raw:
+            return "intermedio"
+            
+        # Default fallback
+        return "bajo"
 
 
 # -------------------------------------------------------------------------

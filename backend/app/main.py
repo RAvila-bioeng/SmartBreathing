@@ -16,6 +16,7 @@ from .models import (
     UserCreate,
     RoutineResponse,
     RoutineRequest,
+    ExerciseInRoutine,
 )
 from .db import get_database
 from .ai_engine import SmartBreathingAI
@@ -265,6 +266,54 @@ async def check_user(datos: dict = Body(...)):
 
 
 # -------------- AI ROUTINE --------------
+@app.post(
+    "/api/ai/alternative-exercise/{user_id}", response_model=Optional[ExerciseInRoutine]
+)
+async def get_alternative_exercise_endpoint(
+    user_id: str,
+    raw_request: Request,
+    request: dict = Body(...), # expects {"exercise_id": "..."}
+):
+    """
+    Returns an alternative exercise for a given exercise ID, matching properties.
+    """
+    try:
+        exercise_id = request.get("exercise_id")
+        if not exercise_id:
+            raise HTTPException(status_code=400, detail="Missing exercise_id")
+
+        # 1. Fetch User
+        db = get_database()
+        try:
+            obj_id = ObjectId(user_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid user_id format")
+
+        user_doc = db.users.find_one({"_id": obj_id})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_profile = UserProfile(**user_doc)
+
+        # 2. Get Alternative
+        alt_exercise = ai_engine.get_alternative_exercise(user_profile, exercise_id)
+        
+        if not alt_exercise:
+            # Fallback or just 404/Null? Let's return null/none to indicate no alternative found
+            # But client might expect JSON. 
+            # Returning 404 might be handled as error. 
+            # Returning None (200 OK with null body) is often safer for logic.
+            return None
+
+        return alt_exercise
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting alternative exercise: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post(
     "/api/ai/generate-routine/{user_id}", response_model=RoutineResponse
 )
