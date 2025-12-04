@@ -118,16 +118,6 @@
         transform: translateY(-1px);
     }
 
-    .manual-form .co2-row, .manual-form .hum-row { 
-        display: flex; 
-        flex-wrap: wrap; 
-        align-items: center; 
-        gap:8px; 
-        width:100%; 
-        justify-content: center;
-        margin-top:15px;
-    }
-
     .manual-form button { 
         padding: 12px 22px; 
         font-size: 1em; 
@@ -168,6 +158,8 @@
         align-items: center; 
         position: relative; 
         transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        flex: 1 1 250px; /* Responsive flex */
+        max-width: 340px;
     }
 
     .metric-card:hover { 
@@ -245,15 +237,14 @@
         padding: 26px; 
         margin-bottom: 28px; 
         margin-top: 28px; 
-        max-width: 1000px; /* ligeramente mayor para más presencia */
+        max-width: 1000px;
         margin-left: auto; 
         margin-right: auto;
         transition: box-shadow 0.25s ease, transform 0.25s ease;
     }
 
-    /* ALTURA MÁS GRANDE E INTERMEDIA DEL CANVAS (CAMBIO SOLICITADO) */
     .chart-container canvas {
-      height: 420px !important; /* aumentado para que se vea mejor */
+      height: 420px !important;
       max-height: 480px;
       width: 100% !important;
     }
@@ -320,8 +311,6 @@
       <label for="cintura-input">Cintura (cm)</label>
       <input type="number" id="cintura-input" name="cintura" min="20" max="250" step="0.1" required placeholder="cm"/>
       
-      <!-- CO2 & Humidity inputs removed (automated ingestion) -->
-
       <div style="width:100%; display:flex; justify-content:center; margin-top:12px;">
         <button type="submit">Guardar datos</button>
       </div>
@@ -329,6 +318,7 @@
     
     <div id="msg-box"></div>
     
+    <!-- Row 1: SpO2, BPM, Grasa -->
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-lungs"></i> Saturación de Oxígeno (SpO₂)</div>
@@ -338,46 +328,13 @@
         <span id="spo2-text">Normal</span>
       </div>
 
-      <!-- CO2 display card (igual que antes) -->
-      <div class="metric-card metric-co2-all">
-        <div class="metric-title">
-          CO₂ (ppm) 
-          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
-            (últimas lecturas)
-          </span>
-        </div>
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
-          <div><div class="co2-value-box" id="co2-1-value">--</div></div>
-          <div><div class="co2-value-box" id="co2-2-value">--</div></div>
-          <div><div class="co2-value-box" id="co2-3-value">--</div></div>
-          <div><div class="co2-value-box" id="co2-4-value">--</div></div>
-          <div><div class="co2-value-box" id="co2-5-value">--</div></div>
-        </div>
-      </div>
-
-      <!-- NUEVA tarjeta para HUMEDAD -->
-      <div class="metric-card metric-hum-all">
-        <div class="metric-title">
-          Humedad (%) 
-          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
-            (últimas lecturas)
-          </span>
-        </div>
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
-          <div><div class="hum-value-box" id="hum-1-value">--</div></div>
-          <div><div class="hum-value-box" id="hum-2-value">--</div></div>
-          <div><div class="hum-value-box" id="hum-3-value">--</div></div>
-          <div><div class="hum-value-box" id="hum-4-value">--</div></div>
-          <div><div class="hum-value-box" id="hum-5-value">--</div></div>
-        </div>
-      </div>
-
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-heart"></i> Frecuencia Cardíaca (bpm)</div>
         <div class="metric-value" id="hr-value">--</div>
         <div class="status-indicator status-good" id="hr-status"></div>
         <span id="hr-text">Normal</span>
       </div>
+
       <div class="metric-card">
         <div class="metric-title"><i class="fas fa-user-md"></i> % Grasa Corporal (YMCA)</div>
         <div class="metric-value" id="grasa-value">--</div>
@@ -385,31 +342,74 @@
         <span id="grasa-text">---</span>
       </div>
     </div>
-    
-    <div class="chart-container">
-      <div class="chart-title">
-        <i class="fas fa-chart-line"></i> Tendencias en Tiempo Real
+
+    <!-- Row 2: CO2 (Stabilized) -->
+    <div class="metrics-grid" style="margin-top: -10px;">
+      <div class="metric-card metric-co2-all" style="width: 100%; max-width: 1000px;">
+        <div class="metric-title">
+          CO₂ (ppm) 
+          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
+            (últimas lecturas)
+          </span>
+        </div>
+        <div style="display:flex; justify-content:center; gap:15px; margin-top:10px; flex-wrap:wrap;">
+          <div><div class="co2-value-box" id="co2-1-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-2-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-3-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-4-value">--</div></div>
+          <div><div class="co2-value-box" id="co2-5-value">--</div></div>
+        </div>
       </div>
-      <canvas id="trendsChart" width="1000" height="420"></canvas>
     </div>
 
-    <!-- NEW ECG CHART SECTION -->
+    <!-- Row 3: Humedad (Stabilized) -->
+    <div class="metrics-grid" style="margin-top: -10px;">
+      <div class="metric-card metric-hum-all" style="width: 100%; max-width: 1000px;">
+        <div class="metric-title">
+          Humedad (%) 
+          <span style="color:#869;margin-left:4px; font-size:0.98em;font-weight:400;">
+            (últimas lecturas)
+          </span>
+        </div>
+        <div style="display:flex; justify-content:center; gap:15px; margin-top:10px; flex-wrap:wrap;">
+          <div><div class="hum-value-box" id="hum-1-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-2-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-3-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-4-value">--</div></div>
+          <div><div class="hum-value-box" id="hum-5-value">--</div></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New Chart A: CO2 -->
+    <div class="chart-container" id="co2-chart-container">
+      <div class="chart-title">
+        <i class="fas fa-chart-line"></i> Evolución CO₂ (ppm) – Raw + puntos estabilizados
+      </div>
+      <div id="co2-no-data" style="display:none; text-align:center; padding: 40px; color: #777; font-weight: 600; font-size: 1.1em; background: #f8f9fc; border-radius: 12px;">
+         Todavía no hay mediciones de CO₂ para mostrar
+      </div>
+      <canvas id="co2Chart" width="1000" height="320"></canvas>
+    </div>
+
+    <!-- New Chart B: Humedad -->
+    <div class="chart-container" id="hum-chart-container">
+      <div class="chart-title">
+        <i class="fas fa-tint"></i> Evolución Humedad (%) – Raw + puntos estabilizados
+      </div>
+      <div id="hum-no-data" style="display:none; text-align:center; padding: 40px; color: #777; font-weight: 600; font-size: 1.1em; background: #f8f9fc; border-radius: 12px;">
+         Todavía no hay mediciones de Humedad para mostrar
+      </div>
+      <canvas id="humChart" width="1000" height="320"></canvas>
+    </div>
+
+    <!-- ECG CHART -->
     <div class="chart-container" id="ecg-container">
       <div class="chart-title">
         <i class="fas fa-wave-square"></i> ECG (últimos 5 segundos)
       </div>
       
-      <!-- Placeholder message if no data -->
-      <div id="ecg-no-data" style="
-          display:none; 
-          text-align:center; 
-          padding: 40px; 
-          color: #777; 
-          font-weight: 600; 
-          font-size: 1.1em;
-          background: #f8f9fc;
-          border-radius: 12px;
-      ">
+      <div id="ecg-no-data" style="display:none; text-align:center; padding: 40px; color: #777; font-weight: 600; font-size: 1.1em; background: #f8f9fc; border-radius: 12px;">
         No hay datos de ECG disponibles todavía.
       </div>
 
@@ -422,7 +422,6 @@
   </div>
   
   <script>
-    /* JS ORIGINAL – NO TOCADO (salvo dataset de humedad y eje secundario) */
     document.addEventListener("DOMContentLoaded", async function() {
       const userId = localStorage.getItem('user_id');
       const userName = localStorage.getItem('user_name');
@@ -439,7 +438,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: userId })
         });
-        console.log("Notified backend of current ECG user:", userId);
       } catch (e) {
         console.warn("Failed to notify backend of current ECG user:", e);
       }
@@ -476,7 +474,6 @@
 
 
       function rangoGrasaYColor(grasa, sexo, edad) {
-        // Nueva lógica solicitada: > 30% es Alerta
         if (grasa > 30) {
            return { nivel: 'Alerta', color: 'status-danger' };
         }
@@ -504,7 +501,11 @@
          if (bpm > 100) return { estado: 'Taquicardia', color: 'status-danger' };
          return { estado: 'Normal', color: 'status-good' };
       }
-
+      
+      function format2Dec(val) {
+          if (val === undefined || val === null || val === '') return '--';
+          return Number(val).toFixed(2);
+      }
 
       function actualizarMetricas(valores) {
         // SpO₂
@@ -526,221 +527,335 @@
         document.getElementById('grasa-status').classList.add(grasaEst.color);
         document.getElementById('grasa-text').textContent = grasaEst.nivel;
         
-        // Frecuencia Cardíaca (BPM) - Inicial y actualizaciones normales
+        // Frecuencia Cardíaca (BPM)
         const bpmVal = valores.bpm !== undefined ? Math.round(Number(valores.bpm)) : '--';
         document.getElementById('hr-value').textContent = bpmVal;
         
-        // Actualizar estado visual del BPM
         if (valores.bpm !== undefined) {
            const bpmEst = bpmColorEstado(Number(valores.bpm));
            ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
            document.getElementById('hr-status').classList.add(bpmEst.color);
            document.getElementById('hr-text').textContent = bpmEst.estado;
         } else {
-           // Reset to default
            ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
            document.getElementById('hr-status').classList.add('status-good');
            document.getElementById('hr-text').textContent = 'Normal';
         }
 
 
-        // CO₂ valores en línea
-        document.getElementById('co2-1-value').textContent = valores.co2_1 !== undefined ? valores.co2_1 : '--';
-        document.getElementById('co2-2-value').textContent = valores.co2_2 !== undefined ? valores.co2_2 : '--';
-        document.getElementById('co2-3-value').textContent = valores.co2_3 !== undefined ? valores.co2_3 : '--';
-        document.getElementById('co2-4-value').textContent = valores.co2_4 !== undefined ? valores.co2_4 : '--';
-        document.getElementById('co2-5-value').textContent = valores.co2_5 !== undefined ? valores.co2_5 : '--';
+        // CO₂ (2 decimals)
+        document.getElementById('co2-1-value').textContent = format2Dec(valores.co2_1);
+        document.getElementById('co2-2-value').textContent = format2Dec(valores.co2_2);
+        document.getElementById('co2-3-value').textContent = format2Dec(valores.co2_3);
+        document.getElementById('co2-4-value').textContent = format2Dec(valores.co2_4);
+        document.getElementById('co2-5-value').textContent = format2Dec(valores.co2_5);
 
-        // HUMEDAD valores en línea (nuevos)
-        document.getElementById('hum-1-value').textContent = valores.hum_1 !== undefined ? valores.hum_1 + ' %' : '--';
-        document.getElementById('hum-2-value').textContent = valores.hum_2 !== undefined ? valores.hum_2 + ' %' : '--';
-        document.getElementById('hum-3-value').textContent = valores.hum_3 !== undefined ? valores.hum_3 + ' %' : '--';
-        document.getElementById('hum-4-value').textContent = valores.hum_4 !== undefined ? valores.hum_4 + ' %' : '--';
-        document.getElementById('hum-5-value').textContent = valores.hum_5 !== undefined ? valores.hum_5 + ' %' : '--';
+        // HUMEDAD (2 decimals)
+        document.getElementById('hum-1-value').textContent = format2Dec(valores.hum_1) !== '--' ? format2Dec(valores.hum_1) + ' %' : '--';
+        document.getElementById('hum-2-value').textContent = format2Dec(valores.hum_2) !== '--' ? format2Dec(valores.hum_2) + ' %' : '--';
+        document.getElementById('hum-3-value').textContent = format2Dec(valores.hum_3) !== '--' ? format2Dec(valores.hum_3) + ' %' : '--';
+        document.getElementById('hum-4-value').textContent = format2Dec(valores.hum_4) !== '--' ? format2Dec(valores.hum_4) + ' %' : '--';
+        document.getElementById('hum-5-value').textContent = format2Dec(valores.hum_5) !== '--' ? format2Dec(valores.hum_5) + ' %' : '--';
       }
 
+      // -------------- NUEVOS GRÁFICOS CO2 & HUMEDAD ----------------
+      let co2Chart = null;
+      let humChart = null;
 
-      // -------------- CÓDIGO AÑADIDO: GRÁFICA DOBLE EJE (CO2 + HUMEDAD) ----------------
-      let trendsChart = null;
+      async function loadAndRenderCO2Charts(userId) {
+          const co2NoData = document.getElementById('co2-no-data');
+          const humNoData = document.getElementById('hum-no-data');
+          const co2Canvas = document.getElementById('co2Chart');
+          const humCanvas = document.getElementById('humChart');
 
-      function extractCo2Array(valores) {
-        return [
-          valores.co2_1 !== undefined && valores.co2_1 !== null && valores.co2_1 !== '' ? Number(valores.co2_1) : null,
-          valores.co2_2 !== undefined && valores.co2_2 !== null && valores.co2_2 !== '' ? Number(valores.co2_2) : null,
-          valores.co2_3 !== undefined && valores.co2_3 !== null && valores.co2_3 !== '' ? Number(valores.co2_3) : null,
-          valores.co2_4 !== undefined && valores.co2_4 !== null && valores.co2_4 !== '' ? Number(valores.co2_4) : null,
-          valores.co2_5 !== undefined && valores.co2_5 !== null && valores.co2_5 !== '' ? Number(valores.co2_5) : null
-        ];
-      }
+          try {
+              const resp = await fetch(`http://localhost:8000/api/co2/last-session/${userId}`);
+              if (resp.status === 404) {
+                  co2NoData.style.display = 'block'; co2Canvas.style.display = 'none';
+                  humNoData.style.display = 'block'; humCanvas.style.display = 'none';
+                  return;
+              }
+              const session = await resp.json();
+              if (!session.senal || session.senal.length === 0) {
+                  co2NoData.style.display = 'block'; co2Canvas.style.display = 'none';
+                  humNoData.style.display = 'block'; humCanvas.style.display = 'none';
+                  return;
+              }
 
-      function extractHumArray(valores) {
-        return [
-          valores.hum_1 !== undefined && valores.hum_1 !== null && valores.hum_1 !== '' ? Number(valores.hum_1) : null,
-          valores.hum_2 !== undefined && valores.hum_2 !== null && valores.hum_2 !== '' ? Number(valores.hum_2) : null,
-          valores.hum_3 !== undefined && valores.hum_3 !== null && valores.hum_3 !== '' ? Number(valores.hum_3) : null,
-          valores.hum_4 !== undefined && valores.hum_4 !== null && valores.hum_4 !== '' ? Number(valores.hum_4) : null,
-          valores.hum_5 !== undefined && valores.hum_5 !== null && valores.hum_5 !== '' ? Number(valores.hum_5) : null
-        ];
-      }
+              // Data exists
+              co2NoData.style.display = 'none'; co2Canvas.style.display = 'block';
+              humNoData.style.display = 'none'; humCanvas.style.display = 'block';
 
-      // calcula yMax y stepSize manteniendo máximo por defecto en 40.000 ppm
-      function computeYAxisParams(dataArr) {
-        const numeric = dataArr.filter(v => v !== null && !isNaN(v));
-        const CAP = 40000;
-        if (numeric.length === 0) {
-          return { yMax: CAP, step: 5000 };
-        }
-        const maxVal = Math.max(...numeric);
-        // Si los datos entran en el rango <= CAP, fijamos yMax = CAP y step a 5000
-        if (maxVal <= CAP) {
-          return { yMax: CAP, step: 5000 };
-        }
-        // Si alguna medida supera CAP, calculamos un yMax mayor que cubra ese valor con pasos grandes
-        const approxSteps = 5;
-        let rawStep = Math.ceil(maxVal / approxSteps);
-        let step = 100;
-        if (rawStep > 5000) step = 1000;
-        else if (rawStep > 2500) step = 500;
-        else if (rawStep > 800) step = 250;
-        else if (rawStep > 300) step = 200;
-        else step = 100;
-        const yMax = Math.ceil(maxVal / step) * step;
-        return { yMax: Math.max(yMax, step), step };
-      }
+              const rawCo2 = session.senal;
+              const rawHum = session.humedad;
+              const stableCo2 = session.co2_estabilizado || [];
+              const stableHum = session.hum_estabilizada || [];
 
-      function updateChartWithValues(valores) {
-        const co2arr = extractCo2Array(valores);
-        const humarr = extractHumArray(valores);
-        const labels = ['1','2','3','4','5'];
+              // Helper to find closest index in raw array for a target value
+              function findClosestIndex(arr, target) {
+                  let bestIdx = 0;
+                  let bestDiff = Infinity;
+                  for (let i = 0; i < arr.length; i++) {
+                      const diff = Math.abs(arr[i] - target);
+                      if (diff < bestDiff) {
+                          bestDiff = diff;
+                          bestIdx = i;
+                      }
+                  }
+                  return bestIdx;
+              }
 
-        const yParams = computeYAxisParams(co2arr);
+              // Linear Regression Helper
+              function linearRegression(points) {
+                  const n = points.length;
+                  if (n === 0) return null;
+                  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                  points.forEach(p => {
+                      const x = p.x;
+                      const y = p.y;
+                      sumX += x;
+                      sumY += y;
+                      sumXY += x * y;
+                      sumXX += x * x;
+                  });
+                  const denominator = (n * sumXX - sumX * sumX);
+                  if (denominator === 0) return null;
+                  const m = (n * sumXY - sumX * sumY) / denominator;
+                  const b = (sumY - m * sumX) / n;
+                  return { m, b };
+              }
 
-        if (!trendsChart) {
-          const ctx = document.getElementById('trendsChart').getContext('2d');
-          trendsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  label: 'CO₂ (ppm)',
-                  data: co2arr,
-                  yAxisID: 'yCo2',
-                  fill: false,                 // <-- sin sombreado bajo la curva
-                  tension: 0.28,
-                  pointRadius: 7,              // círculos azules grandes
-                  pointHoverRadius: 9,
-                  borderWidth: 3,
-                  backgroundColor: 'rgba(66,133,244,0.0)', // transparente
-                  borderColor: 'rgba(66,133,244,0.95)',
-                  pointBackgroundColor: '#ffffff',
-                  pointBorderColor: 'rgba(66,133,244,0.95)',
-                  pointStyle: 'circle',
-                  spanGaps: true
-                },
-                {
-                  label: 'Humedad (%)',
-                  data: humarr,
-                  yAxisID: 'yHum',
-                  fill: false,
-                  tension: 0.2,
-                  pointRadius: 7,              // cuadrados del mismo tamaño que los círculos
-                  pointHoverRadius: 9,
-                  borderWidth: 2.6,
-                  backgroundColor: 'rgba(255,99,132,0.0)', // transparente
-                  borderColor: 'rgba(255,99,132,0.95)',
-                  pointBackgroundColor: 'rgba(255,99,132,0.95)',
-                  pointBorderColor: '#ffffff',
-                  pointStyle: 'rect',          // cuadrado
-                  spanGaps: true
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              layout: { padding: { top: 6, bottom: 6, left: 6, right: 6 } },
-              scales: {
-                x: {
-                  title: { display: true, text: 'Número de medición', color: '#556' },
-                  ticks: { maxRotation: 0, autoSkip: false, font: { size: 13, family: 'Poppins, sans-serif' } },
-                  grid: { color: 'rgba(0,0,0,0.03)' }
-                },
-                yCo2: {
-                  type: 'linear',
-                  position: 'left',
-                  title: { display: true, text: 'CO₂ (ppm)', color: '#556' },
-                  beginAtZero: true,
-                  min: 0,
-                  max: yParams.yMax,
-                  ticks: {
-                    stepSize: yParams.step,
-                    callback: function(value) { return value + ' ppm'; },
-                    font: { size: 12, family: 'Poppins, sans-serif' }
+              // --- PREPARE DATA ---
+
+              // CO2 Data Series
+              const co2RawSeries = rawCo2.map((val, i) => ({ x: i + 1, y: val }));
+              let co2StableSeries = stableCo2.map(val => {
+                  const idx = findClosestIndex(rawCo2, val);
+                  return { x: idx + 1, y: val };
+              });
+              co2StableSeries.sort((a, b) => a.x - b.x); // Sort by index
+
+              // CO2 Regression
+              const lrCo2 = linearRegression(co2StableSeries);
+              let co2RegressionSeries = [];
+              if (lrCo2 && co2StableSeries.length > 0) {
+                  const xMin = co2StableSeries[0].x;
+                  const xMax = co2StableSeries[co2StableSeries.length - 1].x;
+                  co2RegressionSeries = [
+                      { x: xMin, y: lrCo2.m * xMin + lrCo2.b },
+                      { x: xMax, y: lrCo2.m * xMax + lrCo2.b }
+                  ];
+              }
+
+              // Hum Data Series
+              const humRawSeries = rawHum.map((val, i) => ({ x: i + 1, y: val }));
+              let humStableSeries = stableHum.map(val => {
+                  const idx = findClosestIndex(rawHum, val);
+                  return { x: idx + 1, y: val };
+              });
+              humStableSeries.sort((a, b) => a.x - b.x);
+
+              // Hum Regression
+              const lrHum = linearRegression(humStableSeries);
+              let humRegressionSeries = [];
+              if (lrHum && humStableSeries.length > 0) {
+                  const xMin = humStableSeries[0].x;
+                  const xMax = humStableSeries[humStableSeries.length - 1].x;
+                  humRegressionSeries = [
+                      { x: xMin, y: lrHum.m * xMin + lrHum.b },
+                      { x: xMax, y: lrHum.m * xMax + lrHum.b }
+                  ];
+              }
+
+              // Y-Axis Range for CO2
+              const maxCo2Val = Math.max(...rawCo2);
+              const co2Margin = maxCo2Val * 0.1;
+              const co2MaxAxis = Math.ceil(maxCo2Val + co2Margin);
+
+              // --- CO2 CHART ---
+              const ctxCo2 = co2Canvas.getContext('2d');
+              if (co2Chart) co2Chart.destroy();
+              
+              co2Chart = new Chart(ctxCo2, {
+                  type: 'line',
+                  data: {
+                      datasets: [
+                          {
+                              label: 'CO₂ Raw (ppm)',
+                              data: co2RawSeries,
+                              borderColor: 'rgba(66,133,244,0.7)',
+                              backgroundColor: 'rgba(66,133,244,0.05)',
+                              borderWidth: 2,
+                              pointRadius: 0,
+                              fill: false,
+                              tension: 0.1,
+                              order: 3
+                          },
+                          {
+                              label: 'Puntos Estabilizados',
+                              data: co2StableSeries,
+                              type: 'scatter', 
+                              backgroundColor: '#FF5722',
+                              borderColor: '#FF5722',
+                              pointRadius: 6,
+                              pointHoverRadius: 8,
+                              pointStyle: 'circle',
+                              order: 1
+                          },
+                          {
+                              label: 'Regresión Lineal',
+                              data: co2RegressionSeries,
+                              type: 'line',
+                              borderColor: '#FF5722',
+                              borderWidth: 2,
+                              borderDash: [5, 5],
+                              pointRadius: 0,
+                              fill: false,
+                              tension: 0,
+                              order: 2
+                          }
+                      ]
                   },
-                  grid: {
-                    color: 'rgba(0,0,0,0.06)',
-                    borderDash: [2, 4]
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: {
+                          mode: 'index',
+                          intersect: false,
+                      },
+                      scales: {
+                          x: { 
+                              type: 'linear',
+                              title: {display:true, text:'Muestras'}, 
+                              ticks: { stepSize: 10 }
+                          },
+                          y: { 
+                              title: {display:true, text:'ppm'},
+                              min: 0,
+                              max: co2MaxAxis,
+                              ticks: {
+                                  callback: function(val) { return val.toFixed(2) + ' ppm'; }
+                              }
+                          }
+                      },
+                      plugins: {
+                          tooltip: {
+                              callbacks: {
+                                  title: function(items) {
+                                      if (items.length > 0) {
+                                          return 'Muestra ' + items[0].parsed.x;
+                                      }
+                                      return '';
+                                  },
+                                  label: function(context) {
+                                      let label = context.dataset.label || '';
+                                      if (label) label += ': ';
+                                      if (context.parsed.y !== null) {
+                                          label += Number(context.parsed.y).toFixed(2);
+                                      }
+                                      return label;
+                                  }
+                              }
+                          }
+                      }
                   }
-                },
-                yHum: {
-                  type: 'linear',
-                  position: 'right',
-                  title: { display: true, text: 'Humedad (%)', color: '#556' }, // <-- en negro (mismo color que CO2)
-                  beginAtZero: true,
-                  min: 0,
-                  max: 100,
-                  ticks: {
-                    stepSize: 20,
-                    callback: function(value) { return value + ' %'; },
-                    font: { size: 12, family: 'Poppins, sans-serif' }
-                  },
-                  grid: { display: false } // evita grid por duplicado
-                }
-              },
-              plugins: {
-                legend: {
-                  display: true,
-                  labels: {
-                    usePointStyle: true,
-                    boxWidth: 10,
-                    font: { family: 'Poppins, sans-serif', size: 12 }
-                  }
-                },
-                tooltip: {
-                  enabled: true,
-                  backgroundColor: 'rgba(0,0,0,0.82)',
-                  titleFont: { family: 'Poppins, sans-serif', size: 13 },
-                  bodyFont: { family: 'Poppins, sans-serif', size: 13 },
-                  callbacks: {
-                    label: function(context) {
-                      const seriesLabel = context.dataset.label || '';
-                      const val = context.raw;
-                      if (seriesLabel.includes('CO₂')) return `CO₂: ${val !== null ? val : '—'} ppm`;
-                      if (seriesLabel.includes('Humedad')) return `Humedad: ${val !== null ? val : '—'} %`;
-                      return `${seriesLabel}: ${val}`;
-                    }
-                  }
-                }
-              },
-              elements: { line: { borderJoinStyle: 'round' } },
-              interaction: { mode: 'nearest', intersect: false }
-            }
-          });
+              });
 
-          // height for canvas
-          document.getElementById('trendsChart').style.height = '420px';
-        } else {
-          // actualizamos datos y escalas según valores nuevos
-          trendsChart.data.datasets[0].data = co2arr;
-          trendsChart.data.datasets[1].data = humarr;
-          trendsChart.options.scales.yCo2.max = yParams.yMax;
-          trendsChart.options.scales.yCo2.ticks.stepSize = yParams.step;
-          // yHum (0-100) queda fijo
-          trendsChart.update();
-        }
+              // --- HUM CHART ---
+              const ctxHum = humCanvas.getContext('2d');
+              if (humChart) humChart.destroy();
+              
+              humChart = new Chart(ctxHum, {
+                  type: 'line',
+                  data: {
+                      datasets: [
+                          {
+                              label: 'Humedad Raw (%)',
+                              data: humRawSeries,
+                              borderColor: 'rgba(54, 162, 235, 0.7)',
+                              backgroundColor: 'rgba(54, 162, 235, 0.05)',
+                              borderWidth: 2,
+                              pointRadius: 0,
+                              fill: false,
+                              tension: 0.1,
+                              order: 3
+                          },
+                          {
+                              label: 'Puntos Estabilizados',
+                              data: humStableSeries,
+                              type: 'scatter',
+                              backgroundColor: '#E91E63',
+                              borderColor: '#E91E63',
+                              pointRadius: 6,
+                              pointHoverRadius: 8,
+                              pointStyle: 'circle',
+                              order: 1
+                          },
+                          {
+                              label: 'Regresión Lineal',
+                              data: humRegressionSeries,
+                              type: 'line',
+                              borderColor: '#E91E63',
+                              borderWidth: 2,
+                              borderDash: [5, 5],
+                              pointRadius: 0,
+                              fill: false,
+                              tension: 0,
+                              order: 2
+                          }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: {
+                          mode: 'index',
+                          intersect: false,
+                      },
+                      scales: {
+                          x: { 
+                              type: 'linear',
+                              title: {display:true, text:'Muestras'},
+                              ticks: { stepSize: 10 }
+                          },
+                          y: { 
+                              title: {display:true, text:'%'},
+                              min: 0,
+                              max: 100,
+                              ticks: {
+                                  callback: function(val) { return val.toFixed(2) + ' %'; }
+                              }
+                          }
+                      },
+                      plugins: {
+                          tooltip: {
+                              callbacks: {
+                                  title: function(items) {
+                                      if (items.length > 0) {
+                                          return 'Muestra ' + items[0].parsed.x;
+                                      }
+                                      return '';
+                                  },
+                                  label: function(context) {
+                                      let label = context.dataset.label || '';
+                                      if (label) label += ': ';
+                                      if (context.parsed.y !== null) {
+                                          label += Number(context.parsed.y).toFixed(2);
+                                      }
+                                      return label;
+                                  }
+                              }
+                          }
+                      }
+                  }
+              });
+
+          } catch (e) {
+              console.error("Error loading CO2 charts:", e);
+              co2NoData.style.display = 'block'; co2Canvas.style.display = 'none';
+              humNoData.style.display = 'block'; humCanvas.style.display = 'none';
+          }
       }
-      // -------------- FIN CÓDIGO GRÁFICA ----------------
 
       // -------------- NUEVO CÓDIGO ECG ----------------
       let ecgChart = null;
@@ -753,16 +868,12 @@
           const resp = await fetch(`http://localhost:8000/api/ecg/latest/${userId}`);
           
           if (resp.status === 404) {
-             // Show "No hay datos"
              noDataMsg.style.display = 'block';
              canvas.style.display = 'none';
              return;
           }
           
-          if (!resp.ok) {
-             console.warn("Error fetching ECG:", resp.status);
-             return; 
-          }
+          if (!resp.ok) return; 
 
           const data = await resp.json();
           const signal = data.signal || [];
@@ -774,12 +885,9 @@
              return;
           }
 
-          // Data found -> Show canvas
           noDataMsg.style.display = 'none';
           canvas.style.display = 'block';
 
-          // Build time axis
-          // dt = 1/fs
           const dt = 1.0 / fs;
           const labels = signal.map((_, i) => (i * dt).toFixed(2));
 
@@ -792,11 +900,11 @@
                   datasets: [{
                     label: 'Amplitud (mV)',
                     data: signal,
-                    borderColor: 'rgb(235, 77, 75)', // Reddish for ECG
+                    borderColor: 'rgb(235, 77, 75)', 
                     backgroundColor: 'rgba(235, 77, 75, 0.05)',
                     borderWidth: 2,
-                    pointRadius: 0, // Continuous line
-                    tension: 0.1,   // Slight smoothing or 0
+                    pointRadius: 0, 
+                    tension: 0.1,   
                     fill: false
                   }]
                 },
@@ -832,10 +940,7 @@
                   interaction: { mode: 'nearest', intersect: false }
                 }
              });
-             // Set height explicitly via style (already done in CSS, but good to ensure)
-             canvas.style.height = '320px';
           } else {
-             // Update existing chart
              ecgChart.data.labels = labels;
              ecgChart.data.datasets[0].data = signal;
              ecgChart.update();
@@ -845,12 +950,10 @@
           console.error("Error loading ECG:", e);
         }
       }
-      // -------------- FIN NUEVO CÓDIGO ECG ----------------
-
 
       obtenerValoresActuales().then(valores => {
         actualizarMetricas(valores);
-        updateChartWithValues(valores);
+        loadAndRenderCO2Charts(userId);
         loadAndRenderECG(userId);
       });
 
@@ -873,17 +976,7 @@
           grasa_porc: grasa_porc,
         };
         
-        // Ensure we don't accidentally send old CO2/Humidity values if we don't want to overwrite 
-        // (though backend also filters them).
-        // Actually, "valoresActuales" contains the DB state. 
-        // If we want to preserve them in the DB, sending them back is fine as long as they are correct.
-        // But the requirement says "Guardar datos should no longer save CO2 / humidity".
-        // If we send them back, the backend filter will remove them anyway.
-        // We can just send SpO2 and Waist here.
-
-
         console.log('POST VALORES:', nuevosValores);
-
 
         await fetch('http://localhost:8000/api/mediciones', {
           method: 'POST',
@@ -896,31 +989,10 @@
           })
         });
 
-
         actualizarMetricas(nuevosValores);
-
-        // Actualizamos la gráfica con los nuevos valores introducidos (CO2 + Humedad)
-        updateChartWithValues(nuevosValores);
-        
-        // 1. Fetch latest Mediciones to ensure BPM is up to date (per requirements)
-        try {
-          const freshVals = await obtenerValoresActuales();
-          // Update just the HR card or all? safer to update all, but specifically HR was requested.
-          // obtenerValoresActuales returns "valores" object.
-          if (freshVals && freshVals.bpm !== undefined) {
-             const bpm = Number(freshVals.bpm);
-             document.getElementById('hr-value').textContent = Math.round(bpm);
-             
-             // Update status logic for new BPM
-             const bpmEst = bpmColorEstado(bpm);
-             ['status-good','status-warning','status-danger'].forEach(c => document.getElementById('hr-status').classList.remove(c));
-             document.getElementById('hr-status').classList.add(bpmEst.color);
-             document.getElementById('hr-text').textContent = bpmEst.estado;
-          }
-        } catch(e) { console.error("Error fetching latest BPM:", e); }
-
-        // 2. Refresh ECG chart
-        await loadAndRenderECG(userId);
+        // Reload charts just in case, though manual update doesn't change CO2
+        loadAndRenderCO2Charts(userId);
+        loadAndRenderECG(userId);
 
         document.getElementById('msg-box').innerHTML = `<div class="success-message" style="color:#20bb4f;font-weight:700;text-align:center;margin-bottom:1.3em;">Datos guardados correctamente</div>`;
       };
@@ -928,14 +1000,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

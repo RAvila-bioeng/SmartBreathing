@@ -160,6 +160,48 @@ async def get_user_by_id(user_id: str):
         )
 
 
+# --- CO2 SESSION DATA ---
+@app.get("/api/co2/last-session/{user_id}")
+async def get_last_co2_session(user_id: str):
+    db = get_database()
+    try:
+        # Try to find user by string id or ObjectId
+        query = {"idUsuario": user_id}
+        # Ideally we should match the format stored. 
+        # In ingestion/read_co2_scd30.py, it attempts to store ObjectId if possible, else string.
+        # We can try both.
+        
+        # Check if there is any doc with string id
+        doc = db.co2.find_one({"idUsuario": user_id}, sort=[("fecha", -1)])
+        
+        if not doc:
+            # Try ObjectId
+            try:
+                oid = ObjectId(user_id)
+                doc = db.co2.find_one({"idUsuario": oid}, sort=[("fecha", -1)])
+            except Exception:
+                pass
+        
+        if not doc:
+            # Return empty structure or 404? 
+            # Frontend expects JSON to plot. returning 404 might be easier to handle "No data".
+            raise HTTPException(status_code=404, detail="No CO2 session found")
+
+        # Convert doc to JSON-safe
+        doc["_id"] = str(doc["_id"])
+        doc["idUsuario"] = str(doc["idUsuario"])
+        if "fecha" in doc and isinstance(doc["fecha"], datetime):
+             doc["fecha"] = doc["fecha"].isoformat()
+
+        return doc
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching CO2 session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- MEDICIONES ---
 @app.post("/api/mediciones")
 async def create_or_update_medicion(request: Request):
