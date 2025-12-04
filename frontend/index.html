@@ -320,33 +320,7 @@
       <label for="cintura-input">Cintura (cm)</label>
       <input type="number" id="cintura-input" name="cintura" min="20" max="250" step="0.1" required placeholder="cm"/>
       
-      <!-- CO2 inputs -->
-      <div class="co2-row">
-        <label for="co2-1-input">CO₂ 1</label>
-        <input type="number" id="co2-1-input" name="co2_1" min="0" max="40000" step="0.1" required placeholder="ppm"/>
-        <label for="co2-2-input">CO₂ 2</label>
-        <input type="number" id="co2-2-input" name="co2_2" min="0" max="40000" step="0.1" required placeholder="ppm"/>
-        <label for="co2-3-input">CO₂ 3</label>
-        <input type="number" id="co2-3-input" name="co2_3" min="0" max="40000" step="0.1" required placeholder="ppm"/>
-        <label for="co2-4-input">CO₂ 4</label>
-        <input type="number" id="co2-4-input" name="co2_4" min="0" max="40000" step="0.1" required placeholder="ppm"/>
-        <label for="co2-5-input">CO₂ 5</label>
-        <input type="number" id="co2-5-input" name="co2_5" min="0" max="40000" step="0.1" required placeholder="ppm"/>
-      </div>
-
-      <!-- HUMEDAD inputs (nuevos) -->
-      <div class="hum-row" style="margin-top:8px;">
-        <label for="hum-1-input">Humedad 1</label>
-        <input type="number" id="hum-1-input" name="hum_1" min="0" max="100" step="0.1" required placeholder="%"/>
-        <label for="hum-2-input">Humedad 2</label>
-        <input type="number" id="hum-2-input" name="hum_2" min="0" max="100" step="0.1" required placeholder="%"/>
-        <label for="hum-3-input">Humedad 3</label>
-        <input type="number" id="hum-3-input" name="hum_3" min="0" max="100" step="0.1" required placeholder="%"/>
-        <label for="hum-4-input">Humedad 4</label>
-        <input type="number" id="hum-4-input" name="hum_4" min="0" max="100" step="0.1" required placeholder="%"/>
-        <label for="hum-5-input">Humedad 5</label>
-        <input type="number" id="hum-5-input" name="hum_5" min="0" max="100" step="0.1" required placeholder="%"/>
-      </div>
+      <!-- CO2 & Humidity inputs removed (automated ingestion) -->
 
       <div style="width:100%; display:flex; justify-content:center; margin-top:12px;">
         <button type="submit">Guardar datos</button>
@@ -890,38 +864,22 @@
         const cintura = parseFloat(document.getElementById('cintura-input').value);
         const peso = valoresActuales.peso || 70;
         const grasa_porc = parseFloat(((0.23 * cintura) + (0.23 * peso) - 5.4).toFixed(2));
-        const co2_1 = parseFloat(document.getElementById('co2-1-input').value);
-        const co2_2 = parseFloat(document.getElementById('co2-2-input').value);
-        const co2_3 = parseFloat(document.getElementById('co2-3-input').value);
-        const co2_4 = parseFloat(document.getElementById('co2-4-input').value);
-        const co2_5 = parseFloat(document.getElementById('co2-5-input').value);
-
-        // Nuevos: humedades
-        const hum_1 = parseFloat(document.getElementById('hum-1-input').value);
-        const hum_2 = parseFloat(document.getElementById('hum-2-input').value);
-        const hum_3 = parseFloat(document.getElementById('hum-3-input').value);
-        const hum_4 = parseFloat(document.getElementById('hum-4-input').value);
-        const hum_5 = parseFloat(document.getElementById('hum-5-input').value);
-
+        
         const now = new Date().toISOString();
-
 
         const nuevosValores = {
           ...valoresActuales,
           spo2: spo2,
           grasa_porc: grasa_porc,
-          co2_1: co2_1,
-          co2_2: co2_2,
-          co2_3: co2_3,
-          co2_4: co2_4,
-          co2_5: co2_5,
-          // añadimos humedad
-          hum_1: hum_1,
-          hum_2: hum_2,
-          hum_3: hum_3,
-          hum_4: hum_4,
-          hum_5: hum_5
         };
+        
+        // Ensure we don't accidentally send old CO2/Humidity values if we don't want to overwrite 
+        // (though backend also filters them).
+        // Actually, "valoresActuales" contains the DB state. 
+        // If we want to preserve them in the DB, sending them back is fine as long as they are correct.
+        // But the requirement says "Guardar datos should no longer save CO2 / humidity".
+        // If we send them back, the backend filter will remove them anyway.
+        // We can just send SpO2 and Waist here.
 
 
         console.log('POST VALORES:', nuevosValores);

@@ -72,55 +72,9 @@ class StreamingProcessor(DataProcessor):
             self.user_oid = user_id
             
     def process(self, co2: float, hum: float):
+        # Only log to console, NO database updates.
         timestamp = datetime.datetime.now(datetime.timezone.utc)
-        
-        # 1. Insert into co2_raw
-        raw_doc = {
-            "user_id": self.user_oid,
-            "timestamp": timestamp,
-            "co2_ppm": co2,
-            "humidity_rel": hum,
-            "source": "SCD30_Arduino_v1"
-        }
-        try:
-            self.db.co2_raw.insert_one(raw_doc)
-        except Exception as e:
-            logger.error(f"Error inserting into co2_raw: {e}")
-
-        # 2. Update Mediciones
-        try:
-            latest_medicion = self.db.Mediciones.find_one(
-                {"idUsuario": self.user_oid},
-                sort=[("fecha", -1)]
-            )
-
-            if latest_medicion:
-                self.db.Mediciones.update_one(
-                    {"_id": latest_medicion["_id"]},
-                    {
-                        "$set": {
-                            "valores.co2_ppm": co2,
-                            "valores.humidity_rel": hum,
-                            "co2_updated_at": timestamp
-                        }
-                    }
-                )
-                logger.info(f"Updated Medicion {latest_medicion['_id']} with CO2: {co2}, Hum: {hum}")
-            else:
-                medicion_doc = {
-                    "idUsuario": self.user_oid,
-                    "fecha": timestamp,
-                    "valores": {
-                        "co2_ppm": co2,
-                        "humidity_rel": hum
-                    },
-                    "co2_updated_at": timestamp,
-                    "source": "co2_ingestion" 
-                }
-                res = self.db.Mediciones.insert_one(medicion_doc)
-                logger.info(f"Created new Medicion {res.inserted_id} with CO2: {co2}, Hum: {hum}")
-        except Exception as e:
-            logger.error(f"Error updating Mediciones: {e}")
+        logger.info(f"[STREAM] Timestamp: {timestamp}, CO2={co2}, Hum={hum}")
 
     def finish(self):
         # Nothing to do for streaming
@@ -224,16 +178,17 @@ class SessionProcessor(DataProcessor):
 
         end_time = datetime.datetime.now(datetime.timezone.utc)
         
-        # 1. Insert Session Document into 'co2' collection
+        # 1. Insert Session Document into 'co2' collection (ECG-like schema)
         session_doc = {
             "idUsuario": self.user_oid,
-            "fecha_inicio": self.start_time,
-            "fecha_fin": end_time,
-            "raw": self.raw_samples,
+            "fecha": self.start_time,
+            "fs": 0.5, # 1 sample every 2 seconds
+            "senal": [sample["co2_ppm"] for sample in self.raw_samples],
+            "humedad": [sample["humidity_rel"] for sample in self.raw_samples],
+            "origen": "scd30_bolsa_v1",
             "co2_estabilizado": self.stable_co2,
             "hum_estabilizada": self.stable_hum,
-            "num_puntos": len(self.stable_co2),
-            "source": "co2_ingestion_session_v2"
+            "num_puntos": len(self.stable_co2)
         }
         
         try:
@@ -242,7 +197,7 @@ class SessionProcessor(DataProcessor):
         except Exception as e:
             logger.error(f"Error inserting session document: {e}")
             
-        # 2. Update Mediciones with stable points
+        # 2. Update Mediciones with stable points ONLY (no instantaneous values)
         if self.stable_co2:
             update_fields = {"co2_updated_at": end_time}
             for i in range(len(self.stable_co2)):
@@ -253,10 +208,6 @@ class SessionProcessor(DataProcessor):
                 
             try:
                 # Find latest measurement for user or create one
-                # Logic: We might want to append to the LATEST measurement regardless or ensure we are updating the "active" one.
-                # The requirement says: "Update (or create) the Mediciones document for that idUsuario"
-                # "Preserve existing fields" -> implies Update.
-                
                 self.db.Mediciones.update_one(
                     {"idUsuario": self.user_oid},
                     {"$set": update_fields},
@@ -279,9 +230,9 @@ class MockDataGenerator:
     def next_sample(self):
         if not self.session_mode:
             # Simple random
-             co2 = round(random.uniform(400, 1200), 2)
-             hum = round(random.uniform(30, 60), 2)
-             return co2, hum
+            co2 = round(random.uniform(400, 1200), 2)
+            hum = round(random.uniform(30, 60), 2)
+            return co2, hum
         else:
             # State machine for session
             # Rise for X steps, then Stable for Y steps

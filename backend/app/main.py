@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime
 import os
+import sys
+import subprocess
 from bson import ObjectId
 import logging
 
@@ -185,6 +187,11 @@ async def create_or_update_medicion(request: Request):
     existing = db.Mediciones.find_one({"idUsuario": obj_idUsuario})
 
     if existing:
+        # Prevent overwriting CO2/Humidity fields from automated ingestion
+        forbidden_keys = [f"co2_{i}" for i in range(1, 6)] + [f"hum_{i}" for i in range(1, 6)]
+        for k in forbidden_keys:
+            nuevos_valores.pop(k, None)
+
         dict_actual = existing.get("valores", {})
         dict_actual.update(nuevos_valores)
         db.Mediciones.update_one(
@@ -262,6 +269,26 @@ async def check_user(datos: dict = Body(...)):
         raise HTTPException(
             status_code=404, detail="Usuario no existente, regístrese"
         )
+    
+    # Start CO2 measurement session in background
+    try:
+        user_id_str = str(usuario["_id"])
+        ingestion_script = os.path.join(project_root, "ingestion", "read_co2_scd30.py")
+        
+        # Ensure the script exists before trying to run it
+        if os.path.exists(ingestion_script):
+            logger.info(f"Starting CO2 session for user {user_id_str}")
+            subprocess.Popen(
+                [sys.executable, ingestion_script, "--user-id", user_id_str, "--session"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+        else:
+            logger.error(f"Ingestion script not found at {ingestion_script}")
+    except Exception as e:
+        logger.error(f"Failed to start CO2 session: {e}")
+
     return {"user_id": str(usuario["_id"])}
 
 
