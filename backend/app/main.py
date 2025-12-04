@@ -112,6 +112,26 @@ async def get_user_by_telegram(telegram_id: int):
     return user_data
 
 
+@app.post("/api/users/check_duplicate")
+async def check_duplicate_user(datos: dict = Body(...)):
+    db = get_database()
+    nombre = datos.get("nombre", "").strip()
+    apellido = datos.get("apellido", "").strip()
+    codigo = datos.get("codigo", "").strip()
+
+    usuario = db.users.find_one(
+        {
+            "nombre": {"$regex": f"^{nombre}$", "$options": "i"},
+            "apellido": {"$regex": f"^{apellido}$", "$options": "i"},
+            "codigo": codigo,
+        }
+    )
+
+    if usuario:
+        return {"exists": True}
+    return {"exists": False}
+
+
 @app.post("/api/users/create")
 async def create_new_user(user: UserCreate):
     db = get_database()
