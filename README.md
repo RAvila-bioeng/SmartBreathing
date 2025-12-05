@@ -302,7 +302,7 @@ Create `bot/.env`:
 
 ```env
 TELEGRAM_BOT_TOKEN=xxxxxxxx:yyyyyyyy
-OPENAI_API_KEY=sk-...        # if you use OpenAI in the bot
+OPENAI_API_KEY=sk-...        
 BACKEND_BASE_URL=http://localhost:8000
 ```
 
