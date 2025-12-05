@@ -225,7 +225,7 @@
       this.value = this.value.replace(/\D/g, '');
     });
 
-    function irAPersonalizacion(event) {
+    async function irAPersonalizacion(event) {
       event.preventDefault();
       const nombre = document.getElementById('nombre').value.trim();
       const apellido = document.getElementById('apellido').value.trim();
@@ -258,6 +258,26 @@
       if (!validaCapital(apellido)) {
         showToast("El apellido debe empezar obligatoriamente con una letra mayúscula.", "#e13333");
         return;
+      }
+
+      try {
+        const checkResponse = await fetch('http://localhost:8000/api/users/check_duplicate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nombre, apellido, codigo })
+        });
+        const checkResult = await checkResponse.json();
+        
+        if (checkResult.exists) {
+            msgBox.textContent = "Este usuario ya ha sido creado, pruebe a iniciar sesión";
+            showToast("Este usuario ya ha sido creado, pruebe a iniciar sesión", "#e13333");
+            return;
+        }
+      } catch (e) {
+        console.error("Error comprobando usuario:", e);
+        // Opcional: Mostrar error o permitir continuar si el backend no responde
+        showToast("Error de conexión al verificar usuario.", "#e13333");
+        return; 
       }
 
       const datos = {

@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime
 import os
+import sys
+import subprocess
 from bson import ObjectId
 import logging
 
@@ -110,6 +112,26 @@ async def get_user_by_telegram(telegram_id: int):
     return user_data
 
 
+@app.post("/api/users/check_duplicate")
+async def check_duplicate_user(datos: dict = Body(...)):
+    db = get_database()
+    nombre = datos.get("nombre", "").strip()
+    apellido = datos.get("apellido", "").strip()
+    codigo = datos.get("codigo", "").strip()
+
+    usuario = db.users.find_one(
+        {
+            "nombre": {"$regex": f"^{nombre}$", "$options": "i"},
+            "apellido": {"$regex": f"^{apellido}$", "$options": "i"},
+            "codigo": codigo,
+        }
+    )
+
+    if usuario:
+        return {"exists": True}
+    return {"exists": False}
+
+
 @app.post("/api/users/create")
 async def create_new_user(user: UserCreate):
     db = get_database()
@@ -158,6 +180,52 @@ async def get_user_by_id(user_id: str):
         )
 
 
+# --- CO2 SESSION DATA ---
+@app.get("/api/co2/last-session/{user_id}")
+async def get_last_co2_session(user_id: str):
+    db = get_database()
+    try:
+        # Try to find user by string id or ObjectId
+        query = {"idUsuario": user_id}
+        # Ideally we should match the format stored. 
+        # In ingestion/read_co2_scd30.py, it attempts to store ObjectId if possible, else string.
+        # We can try both.
+        
+        # Check if there is any doc with string id
+        doc = db.co2.find_one({"idUsuario": user_id}, sort=[("fecha", -1)])
+        
+        if not doc:
+            # Try ObjectId
+            try:
+                oid = ObjectId(user_id)
+                doc = db.co2.find_one({"idUsuario": oid}, sort=[("fecha", -1)])
+            except Exception:
+                pass
+        
+        if not doc:
+            # Return empty structure or 404? 
+            # Frontend expects JSON to plot. returning 404 might be easier to handle "No data".
+            raise HTTPException(status_code=404, detail="No CO2 session found")
+
+        # Convert doc to JSON-safe
+        doc["_id"] = str(doc["_id"])
+        doc["idUsuario"] = str(doc["idUsuario"])
+        if "fecha" in doc and isinstance(doc["fecha"], datetime):
+             doc["fecha"] = doc["fecha"].isoformat()
+
+        # Ensure indices_estabilizados is present (null if missing in legacy data)
+        if "indices_estabilizados" not in doc:
+             doc["indices_estabilizados"] = None
+
+        return doc
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching CO2 session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- MEDICIONES ---
 @app.post("/api/mediciones")
 async def create_or_update_medicion(request: Request):
@@ -185,6 +253,11 @@ async def create_or_update_medicion(request: Request):
     existing = db.Mediciones.find_one({"idUsuario": obj_idUsuario})
 
     if existing:
+        # Prevent overwriting CO2/Humidity fields from automated ingestion
+        forbidden_keys = [f"co2_{i}" for i in range(1, 6)] + [f"hum_{i}" for i in range(1, 6)]
+        for k in forbidden_keys:
+            nuevos_valores.pop(k, None)
+
         dict_actual = existing.get("valores", {})
         dict_actual.update(nuevos_valores)
         db.Mediciones.update_one(
@@ -262,6 +335,28 @@ async def check_user(datos: dict = Body(...)):
         raise HTTPException(
             status_code=404, detail="Usuario no existente, regístrese"
         )
+    
+    # Start CO2 measurement session in background
+    try:
+        user_id_str = str(usuario["_id"])
+        ingestion_script = os.path.join(project_root, "ingestion", "read_co2_scd30.py")
+        
+        # Ensure the script exists before trying to run it
+        if os.path.exists(ingestion_script):
+            logger.info(f"Starting CO2 session for user {user_id_str}")
+            cmd = [sys.executable, ingestion_script, "--user-id", user_id_str, "--session"]
+            logger.info(f"Launching CO2 session command: {cmd}")
+            subprocess.Popen(
+                cmd,
+                stdout=None,   # hereda stdout/stderr → veo logs en la consola
+                stderr=None,
+                start_new_session=True
+            )
+        else:
+            logger.error(f"Ingestion script not found at {ingestion_script}")
+    except Exception as e:
+        logger.error(f"Failed to start CO2 session: {e}")
+
     return {"user_id": str(usuario["_id"])}
 
 
