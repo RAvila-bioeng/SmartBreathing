@@ -37,7 +37,11 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description="Ingest CO2 and Humidity data from SCD30 via Arduino")
     parser.add_argument("--user-id", required=True, help="User ID for the session")
-    parser.add_argument("--port", default=os.getenv("CO2_SERIAL_PORT", "/dev/ttyACM0"), help="Serial port")
+    parser.add_argument(
+        "--port",
+        default=os.getenv("CO2_SERIAL_PORT", "COM4"),
+        help="Serial port (e.g. COM4 on Windows or /dev/ttyACM0 on Linux)"
+    )
     parser.add_argument("--baud", type=int, default=115200, help="Baud rate")
     parser.add_argument("--mock", action="store_true", help="Generate dummy data instead of reading from serial")
     parser.add_argument("--session", action="store_true", help="Run in session mode (detect stabilization points)")
@@ -93,9 +97,27 @@ class SessionProcessor(DataProcessor):
         self.hum_buffer: List[float] = []
         self.stable_co2: List[float] = []
         self.stable_hum: List[float] = []
+        self.stable_indices: List[int] = []
         self.samples_since_last_plateau = 0
         self.completed = False
         self.baseline_taken = False
+
+        # Parámetros de afinado para la detección de plateaus
+        # Número mínimo de muestras en la ventana de comparación (3 previas + 3 recientes)
+        self.MIN_BUFFER = 6
+
+        # Separación mínima (en nº de muestras) entre plateaus normales
+        self.MIN_GAP_BETWEEN = 6
+
+        # Separación mínima extra tras el baseline (primer punto)
+        # para dar tiempo a que la persona empiece a respirar.
+        self.MIN_GAP_AFTER_BASELINE = 12
+
+        # Umbral de estabilidad en ppm: más laxo que antes (10 → 40)
+        self.THRESHOLD = 40.0
+
+        # Diferencia mínima de CO2 entre plateaus consecutivos para considerarlos "distintos"
+        self.MIN_DELTA_CO2 = 150.0
         
         # Raw data accumulation
         self.raw_samples: List[Dict[str, Any]] = []
@@ -120,7 +142,9 @@ class SessionProcessor(DataProcessor):
             self.baseline_taken = True
             self.stable_co2.append(co2)
             self.stable_hum.append(hum)
-            logger.info(f"Baseline stabilized point #1: CO2={co2:.2f}, Hum={hum:.2f}")
+            # Save index of this baseline sample
+            self.stable_indices.append(len(self.raw_samples) - 1)
+            logger.info(f"Baseline stabilized point #1 at index {self.stable_indices[-1]}: CO2={co2:.2f}, Hum={hum:.2f}")
 
             # Reset buffers so this sample is NOT reused for window comparison
             self.co2_buffer = []
@@ -133,43 +157,59 @@ class SessionProcessor(DataProcessor):
         self.co2_buffer.append(co2)
         self.hum_buffer.append(hum)
         self.samples_since_last_plateau += 1
-        
-        # Stabilization logic
-        # Need at least 6 samples in buffer (for window comparison)
-        # And wait at least 6 samples since last plateau
-        if len(self.co2_buffer) >= 6 and self.samples_since_last_plateau >= 6:
-            # Check last 3 vs prev 3
-            # co2_buffer is [..., p3, p2, p1, c3, c2, c1]
-            # mean_prev3 = p3+p2+p1
-            # mean_last3 = c3+c2+c1
-            
+
+        # Elegimos la separación mínima según el número de plateaus ya detectados
+        # - Tras el baseline (1er punto), exigimos más separación
+        # - Para los siguientes, usamos la separación normal
+        required_gap = (
+            self.MIN_GAP_AFTER_BASELINE if len(self.stable_co2) == 1
+            else self.MIN_GAP_BETWEEN
+        )
+
+        # Necesitamos suficientes muestras en buffer y separación desde el último plateau
+        if len(self.co2_buffer) >= self.MIN_BUFFER and self.samples_since_last_plateau >= required_gap:
+            # Comparamos las últimas 3 muestras con las 3 anteriores
             mean_prev3 = sum(self.co2_buffer[-6:-3]) / 3.0
             mean_last3 = sum(self.co2_buffer[-3:]) / 3.0
             diff = abs(mean_last3 - mean_prev3)
-            
-            THRESHOLD = 10.0 # ppm
-            
-            if diff < THRESHOLD:
-                # Stabilization detected
+
+            # Condición de estabilidad: diferencia por debajo de THRESHOLD
+            if diff < self.THRESHOLD:
                 stable_co2_val = mean_last3
                 stable_hum_val = sum(self.hum_buffer[-3:]) / 3.0
-                
+
+                # Filtro adicional: que este plateau sea realmente distinto del anterior
+                if self.stable_co2:
+                    last_stable = self.stable_co2[-1]
+                    if abs(stable_co2_val - last_stable) < self.MIN_DELTA_CO2:
+                        logger.info(
+                            f"Ignoring plateau candidate (ΔCO2<{self.MIN_DELTA_CO2} ppm) "
+                            f"CO2={stable_co2_val:.2f}, last={last_stable:.2f}"
+                        )
+                        return
+
                 self.stable_co2.append(stable_co2_val)
                 self.stable_hum.append(stable_hum_val)
-                
-                logger.info(f"Detected stabilized point #{len(self.stable_co2)}: CO2={stable_co2_val:.2f}, Hum={stable_hum_val:.2f}")
-                
-                # Reset buffers/counter
+
+                # Índice del último sample en raw_samples
+                current_idx = len(self.raw_samples) - 1
+                self.stable_indices.append(current_idx)
+
+                logger.info(
+                    f"Detected stabilized point #{len(self.stable_co2)} "
+                    f"at index {current_idx}: CO2={stable_co2_val:.2f}, Hum={stable_hum_val:.2f}"
+                )
+
+                # Reiniciamos buffers y contador desde el último plateau
                 self.co2_buffer = []
                 self.hum_buffer = []
                 self.samples_since_last_plateau = 0
-                
+
+                # Condición de parada: baseline + 3 plateaus válidos (total 5 puntos)
+                # IMPORTANTE: mantén el resto de la lógica intacta
                 if len(self.stable_co2) >= 5:
                     logger.info("Reached 5 stabilized points (including baseline). Session complete.")
                     self.completed = True
-                    # We can choose to stop reading immediately or wait for finish() call
-                    # Usually main loop will check processor.completed? 
-                    # For now we just mark completed.
 
     def finish(self):
         if not self.raw_samples:
@@ -188,6 +228,7 @@ class SessionProcessor(DataProcessor):
             "origen": "scd30_bolsa_v1",
             "co2_estabilizado": self.stable_co2,
             "hum_estabilizada": self.stable_hum,
+            "indices_estabilizados": self.stable_indices,
             "num_puntos": len(self.stable_co2)
         }
         

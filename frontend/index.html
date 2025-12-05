@@ -590,82 +590,80 @@
               const rawHum = session.humedad;
               const stableCo2 = session.co2_estabilizado || [];
               const stableHum = session.hum_estabilizada || [];
-
-              // Helper to find closest index in raw array for a target value
-              function findClosestIndex(arr, target) {
-                  let bestIdx = 0;
-                  let bestDiff = Infinity;
-                  for (let i = 0; i < arr.length; i++) {
-                      const diff = Math.abs(arr[i] - target);
-                      if (diff < bestDiff) {
-                          bestDiff = diff;
-                          bestIdx = i;
-                      }
-                  }
-                  return bestIdx;
-              }
+              const stableIndices = session.indices_estabilizados;
 
               // Linear Regression Helper
-              function linearRegression(points) {
-                  const n = points.length;
+              function linearRegression(xs, ys) {
+                  const n = xs.length;
                   if (n === 0) return null;
-                  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-                  points.forEach(p => {
-                      const x = p.x;
-                      const y = p.y;
-                      sumX += x;
-                      sumY += y;
-                      sumXY += x * y;
-                      sumXX += x * x;
-                  });
-                  const denominator = (n * sumXX - sumX * sumX);
-                  if (denominator === 0) return null;
-                  const m = (n * sumXY - sumX * sumY) / denominator;
+                  const sumX = xs.reduce((a,b) => a + b, 0);
+                  const sumY = ys.reduce((a,b) => a + b, 0);
+                  const sumXY = xs.reduce((acc, x, i) => acc + x * ys[i], 0);
+                  const sumX2 = xs.reduce((acc, x) => acc + x * x, 0);
+                  const denom = (n * sumX2 - sumX * sumX);
+                  
+                  if (!denom) {
+                      return { m: 0, b: ys[0] ?? 0 };
+                  }
+                  
+                  const m = (n * sumXY - sumX * sumY) / denom;
                   const b = (sumY - m * sumX) / n;
                   return { m, b };
               }
 
               // --- PREPARE DATA ---
+              const labels = rawCo2.map((_, i) => i + 1);
 
-              // CO2 Data Series
-              const co2RawSeries = rawCo2.map((val, i) => ({ x: i + 1, y: val }));
-              let co2StableSeries = stableCo2.map(val => {
-                  const idx = findClosestIndex(rawCo2, val);
-                  return { x: idx + 1, y: val };
-              });
-              co2StableSeries.sort((a, b) => a.x - b.x); // Sort by index
-
-              // CO2 Regression
-              const lrCo2 = linearRegression(co2StableSeries);
+              // Series 1: RAW
+              // We just pass the raw arrays directly to Chart.js 'data' array, 
+              // as we are using category labels 1..N
+              
+              // Series 2: STABILIZED POINTS (only at specific indices)
+              // We'll create a sparse array (lots of nulls) so Chart.js handles it with spanGaps: true (or false if we want gaps)
+              // Actually, for points we want them to appear exactly at that X.
+              // So we fill an array of nulls, and place values at stableIndices[i].
+              
+              let co2StableSeries = new Array(labels.length).fill(null);
+              let humStableSeries = new Array(labels.length).fill(null);
               let co2RegressionSeries = [];
-              if (lrCo2 && co2StableSeries.length > 0) {
-                  const xMin = co2StableSeries[0].x;
-                  const xMax = co2StableSeries[co2StableSeries.length - 1].x;
-                  co2RegressionSeries = [
-                      { x: xMin, y: lrCo2.m * xMin + lrCo2.b },
-                      { x: xMax, y: lrCo2.m * xMax + lrCo2.b }
-                  ];
-              }
-
-              // Hum Data Series
-              const humRawSeries = rawHum.map((val, i) => ({ x: i + 1, y: val }));
-              let humStableSeries = stableHum.map(val => {
-                  const idx = findClosestIndex(rawHum, val);
-                  return { x: idx + 1, y: val };
-              });
-              humStableSeries.sort((a, b) => a.x - b.x);
-
-              // Hum Regression
-              const lrHum = linearRegression(humStableSeries);
               let humRegressionSeries = [];
-              if (lrHum && humStableSeries.length > 0) {
-                  const xMin = humStableSeries[0].x;
-                  const xMax = humStableSeries[humStableSeries.length - 1].x;
-                  humRegressionSeries = [
-                      { x: xMin, y: lrHum.m * xMin + lrHum.b },
-                      { x: xMax, y: lrHum.m * xMax + lrHum.b }
-                  ];
+              
+              if (stableIndices && Array.isArray(stableIndices) && stableIndices.length > 0) {
+                  // NEW LOGIC
+                  stableIndices.forEach((idx, i) => {
+                      if (idx < labels.length) {
+                         co2StableSeries[idx] = stableCo2[i];
+                         humStableSeries[idx] = stableHum[i];
+                      }
+                  });
+
+                  // Regression CO2
+                  // xs = indices (0-based) from indices_estabilizados ? 
+                  // Wait, chart labels are 1-based (i+1). 
+                  // Let's use 0-based index for calculation to match the array index (x-axis is category 1..N, but internal index is 0..N-1)
+                  // Actually, better to use the same 'x' domain as the chart.
+                  // Chart labels are 1, 2, 3...
+                  // So x values are indices + 1.
+                  
+                  const xs = stableIndices.map(idx => idx + 1);
+                  
+                  const lrCo2 = linearRegression(xs, stableCo2);
+                  if (lrCo2) {
+                      co2RegressionSeries = labels.map((_, i) => lrCo2.m * (i + 1) + lrCo2.b);
+                  }
+
+                  const lrHum = linearRegression(xs, stableHum);
+                  if (lrHum) {
+                      humRegressionSeries = labels.map((_, i) => lrHum.m * (i + 1) + lrHum.b);
+                  }
+
+              } else {
+                  // LEGACY LOGIC: No indices available.
+                  // Only show raw data.
+                  // Leave stable/regression arrays empty/null.
+                  // Arrays are already null filled, just ensure we don't try to populate them.
               }
+
 
               // Y-Axis Range for CO2
               const maxCo2Val = Math.max(...rawCo2);
@@ -679,10 +677,11 @@
               co2Chart = new Chart(ctxCo2, {
                   type: 'line',
                   data: {
+                      labels: labels,
                       datasets: [
                           {
                               label: 'CO₂ Raw (ppm)',
-                              data: co2RawSeries,
+                              data: rawCo2,
                               borderColor: 'rgba(66,133,244,0.7)',
                               backgroundColor: 'rgba(66,133,244,0.05)',
                               borderWidth: 2,
@@ -694,25 +693,27 @@
                           {
                               label: 'Puntos Estabilizados',
                               data: co2StableSeries,
-                              type: 'scatter', 
-                              backgroundColor: '#FF5722',
                               borderColor: '#FF5722',
+                              backgroundColor: '#FF5722',
                               pointRadius: 6,
                               pointHoverRadius: 8,
                               pointStyle: 'circle',
+                              showLine: false, // Ensure points are not connected
+                              spanGaps: false, 
                               order: 1
                           },
                           {
-                              label: 'Regresión Lineal',
+                              label: 'Regresión CO₂',
                               data: co2RegressionSeries,
-                              type: 'line',
                               borderColor: '#FF5722',
                               borderWidth: 2,
-                              borderDash: [5, 5],
+                              borderDash: [6, 6],
                               pointRadius: 0,
                               fill: false,
                               tension: 0,
-                              order: 2
+                              spanGaps: true, // Line is continuous calculated
+                              order: 2,
+                              hidden: (co2RegressionSeries.length === 0)
                           }
                       ]
                   },
@@ -725,28 +726,18 @@
                       },
                       scales: {
                           x: { 
-                              type: 'linear',
                               title: {display:true, text:'Muestras'}, 
                               ticks: { stepSize: 10 }
                           },
                           y: { 
                               title: {display:true, text:'ppm'},
-                              min: 0,
-                              max: co2MaxAxis,
-                              ticks: {
-                                  callback: function(val) { return val.toFixed(2) + ' ppm'; }
-                              }
+                              suggestedMin: 0,
+                              suggestedMax: co2MaxAxis,
                           }
                       },
                       plugins: {
                           tooltip: {
                               callbacks: {
-                                  title: function(items) {
-                                      if (items.length > 0) {
-                                          return 'Muestra ' + items[0].parsed.x;
-                                      }
-                                      return '';
-                                  },
                                   label: function(context) {
                                       let label = context.dataset.label || '';
                                       if (label) label += ': ';
@@ -768,10 +759,11 @@
               humChart = new Chart(ctxHum, {
                   type: 'line',
                   data: {
+                      labels: labels,
                       datasets: [
                           {
                               label: 'Humedad Raw (%)',
-                              data: humRawSeries,
+                              data: rawHum,
                               borderColor: 'rgba(54, 162, 235, 0.7)',
                               backgroundColor: 'rgba(54, 162, 235, 0.05)',
                               borderWidth: 2,
@@ -783,25 +775,27 @@
                           {
                               label: 'Puntos Estabilizados',
                               data: humStableSeries,
-                              type: 'scatter',
-                              backgroundColor: '#E91E63',
                               borderColor: '#E91E63',
+                              backgroundColor: '#E91E63',
                               pointRadius: 6,
                               pointHoverRadius: 8,
                               pointStyle: 'circle',
+                              showLine: false,
+                              spanGaps: false,
                               order: 1
                           },
                           {
-                              label: 'Regresión Lineal',
+                              label: 'Regresión Humedad',
                               data: humRegressionSeries,
-                              type: 'line',
                               borderColor: '#E91E63',
                               borderWidth: 2,
-                              borderDash: [5, 5],
+                              borderDash: [6, 6],
                               pointRadius: 0,
                               fill: false,
                               tension: 0,
-                              order: 2
+                              spanGaps: true,
+                              order: 2,
+                              hidden: (humRegressionSeries.length === 0)
                           }
                       ]
                   },
@@ -814,28 +808,18 @@
                       },
                       scales: {
                           x: { 
-                              type: 'linear',
                               title: {display:true, text:'Muestras'},
                               ticks: { stepSize: 10 }
                           },
                           y: { 
                               title: {display:true, text:'%'},
-                              min: 0,
-                              max: 100,
-                              ticks: {
-                                  callback: function(val) { return val.toFixed(2) + ' %'; }
-                              }
+                              suggestedMin: 0,
+                              suggestedMax: 100,
                           }
                       },
                       plugins: {
                           tooltip: {
                               callbacks: {
-                                  title: function(items) {
-                                      if (items.length > 0) {
-                                          return 'Muestra ' + items[0].parsed.x;
-                                      }
-                                      return '';
-                                  },
                                   label: function(context) {
                                       let label = context.dataset.label || '';
                                       if (label) label += ': ';

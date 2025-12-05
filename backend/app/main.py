@@ -213,6 +213,10 @@ async def get_last_co2_session(user_id: str):
         if "fecha" in doc and isinstance(doc["fecha"], datetime):
              doc["fecha"] = doc["fecha"].isoformat()
 
+        # Ensure indices_estabilizados is present (null if missing in legacy data)
+        if "indices_estabilizados" not in doc:
+             doc["indices_estabilizados"] = None
+
         return doc
 
     except HTTPException:
@@ -340,10 +344,12 @@ async def check_user(datos: dict = Body(...)):
         # Ensure the script exists before trying to run it
         if os.path.exists(ingestion_script):
             logger.info(f"Starting CO2 session for user {user_id_str}")
+            cmd = [sys.executable, ingestion_script, "--user-id", user_id_str, "--session"]
+            logger.info(f"Launching CO2 session command: {cmd}")
             subprocess.Popen(
-                [sys.executable, ingestion_script, "--user-id", user_id_str, "--session"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                cmd,
+                stdout=None,   # hereda stdout/stderr → veo logs en la consola
+                stderr=None,
                 start_new_session=True
             )
         else:
